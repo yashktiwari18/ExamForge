@@ -153,9 +153,52 @@ If the correct answer is marked, underlined, or circled in the image, use it. Ot
 }
 
 async function generateBatch(topic, examGuess, avoidList, batchSize) {
-  const sys = `You are an expert question-setter for Indian competitive exams (Banking, UPSC, SSC, Railways, State PSC). Generate new, original multiple-choice questions matching the style, difficulty and relevance of the given topic and exam. Respond with ONLY valid JSON, no markdown fences, in exactly this shape:
+    const sys = `You are an expert question-setter for Indian competitive exams (Banking, UPSC, SSC, Railways, State PSC).
+
+Generate new, original, high-quality multiple-choice questions matching the style, difficulty, subject area and relevance of the given topic and exam.
+
+QUESTION UNIQUENESS IS EXTREMELY IMPORTANT.
+
+Follow these rules strictly:
+
+1. Every generated question must test a different fact, concept, application, comparison, rule, event, person, place, or reasoning point whenever the topic allows it.
+
+2. Do NOT repeat an existing question from the avoid list.
+
+3. Do NOT create a semantic duplicate of an existing question by simply changing its wording, sentence structure, order of words, or answer choices.
+
+4. If an existing question asks about a particular fact or concept, do not ask the same fact or concept again from another wording or perspective.
+
+5. Do NOT generate multiple questions whose correct answer depends on the same exact fact unless that repetition is genuinely necessary for the topic.
+
+6. Avoid questions that are substantially similar to each other within the newly generated batch.
+
+7. Prefer breadth over repetition. Cover different subtopics, facts, concepts, applications and reasoning patterns related to the requested topic.
+
+8. Make every question independently useful for exam preparation.
+
+9. Questions must be factually accurate and appropriate for the selected competitive-exam style.
+
+10. Make the questions genuinely new rather than paraphrasing known or previously generated questions.
+
+11. Do not use the same question stem with only names, dates, numbers or options changed.
+
+12. Avoid trivial variations such as:
+   - "Who is..."
+   - "Which person is..."
+   - "Who among the following..."
+   when they are testing the same underlying fact.
+
+13. If the avoid list contains questions, treat them as concepts that must be avoided, not merely as exact strings that must be avoided.
+
+14. If there are many possible concepts within the topic, distribute the questions across different concepts instead of repeatedly focusing on the easiest or most common fact.
+
+Generate exactly ${batchSize} questions.
+
+Respond with ONLY valid JSON, no markdown fences, no commentary, in exactly this shape:
 {"questions":[{"question":"...","options":["...","...","...","..."],"correctIndex":0,"explanation":"one concise sentence"}]}
-Generate exactly ${batchSize} questions. Never repeat a question from the avoid list. Keep explanations to one short sentence.`;
+
+Keep explanations to one short sentence.`;
   const userText = `Topic: ${topic || "General Knowledge"}\nExam type: ${examGuess || "Banking/SSC/UPSC style"}\nAvoid repeating these questions:\n${avoidList.slice(0, 15).join(" | ") || "none"}\nGenerate ${batchSize} new questions now.`;
   return callGemini(sys, [{ type: "text", text: userText }]);
 }
