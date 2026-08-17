@@ -1,0 +1,17 @@
+{
+  "exam": {
+    "category": "SSC",
+    "name": "Stenographers / SO-Steno LDCE",
+    "year": 2024,
+    "stage": "",
+    "paper": ""
+  },
+  "source": {
+    "type": "pyq",
+    "authority": "SSC",
+    "verified": false,
+    "sourceUrl": "",
+    "sourceFile": "paper-1.pdf"
+  },
+  "questions": []
+}

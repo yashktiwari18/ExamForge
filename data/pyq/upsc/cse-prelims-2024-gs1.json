@@ -1,0 +1,35 @@
+{
+  "exam": {
+    "category": "UPSC",
+    "name": "Civil Services Preliminary Examination",
+    "year": 2024,
+    "stage": "Prelims",
+    "paper": "General Studies Paper I"
+  },
+  "source": {
+    "type": "pyq",
+    "authority": "UPSC",
+    "verified": true,
+    "sourceUrl": ""
+  },
+  "questions": [
+    {
+      "id": "upsc-cse-prelims-2024-gs1-q01",
+      "questionNumber": 1,
+      "question": "Sample question",
+      "options": [
+        "Option A",
+        "Option B",
+        "Option C",
+        "Option D"
+      ],
+      "correctIndex": 0,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "",
+      "explanation": "",
+      "answerVerified": false
+    }
+  ]
+}
