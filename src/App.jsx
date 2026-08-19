@@ -29,6 +29,7 @@ const TIMER_OPTIONS = [
 
 async function callGemini(system, content) {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim();
+  
 
   if (!apiKey) {
     throw new Error(
@@ -83,7 +84,7 @@ async function callGemini(system, content) {
 
         generationConfig: {
           responseMimeType: "application/json",
-          maxOutputTokens: 4000,
+          maxOutputTokens: 8192,
         },
       }),
     }
@@ -153,53 +154,162 @@ If the correct answer is marked, underlined, or circled in the image, use it. Ot
 }
 
 async function generateBatch(topic, examGuess, avoidList, batchSize) {
-    const sys = `You are an expert question-setter for Indian competitive exams (Banking, UPSC, SSC, Railways, State PSC).
+  const sys = `You are an expert question-setter for Indian competitive exams.
 
-Generate new, original, high-quality multiple-choice questions matching the style, difficulty, subject area and relevance of the given topic and exam.
+Generate exactly ${batchSize} original, high-quality multiple-choice questions.
 
-QUESTION UNIQUENESS IS EXTREMELY IMPORTANT.
+IMPORTANT RULES:
 
-Follow these rules strictly:
+1. The requested topic is the PRIMARY subject.
+2. The selected exam type controls the question style, difficulty, depth and thinking level, NOT the subject.
+3. Questions must be appropriate for serious Indian competitive-exam preparation.
+4. Do NOT generate school-level questions unless the selected exam style explicitly requires it.
+5. Do NOT make questions artificially difficult by using obscure, useless or extremely niche facts.
+6. Difficulty must come from conceptual understanding, application, reasoning, comparison, elimination, multiple statements, close options or multi-step thinking where appropriate.
+7. The question must test the candidate's understanding rather than simple one-line memorization whenever the selected exam style allows it.
 
-1. Every generated question must test a different fact, concept, application, comparison, rule, event, person, place, or reasoning point whenever the topic allows it.
+EXAM LEVEL RULES:
 
-2. Do NOT repeat an existing question from the avoid list.
+UPSC:
+- Target difficulty: Moderate to Hard.
+- Prefer conceptual, analytical, statement-based and application-oriented questions.
+- Use multiple-statement questions where appropriate.
+- Use questions that require comparison, elimination and careful reading.
+- Options should be plausible and reasonably close.
+- Avoid basic school-level questions such as simple definitions or obvious one-line facts.
+- Do not make questions difficult merely by using obscure facts.
+- For subjects such as Biology, History, Geography, Polity and Economy, focus on concepts, relationships, applications, institutions, processes and implications.
 
-3. Do NOT create a semantic duplicate of an existing question by simply changing its wording, sentence structure, order of words, or answer choices.
+Banking:
+- Target difficulty: Moderate to Hard.
+- Questions should resemble competitive banking-exam preparation rather than school examinations.
+- Prefer application-based, conceptual, calculation-based and reasoning-oriented questions where appropriate.
+- For General Awareness subjects, use relevant competitive-exam knowledge with plausible distractors.
+- For Mathematics/Quantitative Aptitude, use multi-step and time-efficient competitive-exam problems.
+- Avoid extremely basic textbook questions.
 
-4. If an existing question asks about a particular fact or concept, do not ask the same fact or concept again from another wording or perspective.
+SSC:
+- Target difficulty: Easy to Moderate, with some Hard questions.
+- Questions should follow a competitive-exam pattern.
+- Prefer practical application, factual understanding, calculations, reasoning and close options.
+- Avoid questions that are so easy that they can be answered instantly without thinking.
+- Do not make questions unnecessarily advanced beyond the expected SSC level.
 
-5. Do NOT generate multiple questions whose correct answer depends on the same exact fact unless that repetition is genuinely necessary for the topic.
+Railways:
+- Target difficulty: Easy to Moderate.
+- Questions should be suitable for competitive railway examinations.
+- Use practical application, basic-to-intermediate concepts and competitive-exam style options.
+- Avoid very elementary school questions and avoid unnecessarily advanced questions.
 
-6. Avoid questions that are substantially similar to each other within the newly generated batch.
+State PSC:
+- Target difficulty: Moderate to Hard.
+- Prefer conceptual, analytical and statement-based questions.
+- Use close options and elimination where appropriate.
+- Questions should test competitive-exam understanding rather than simple school-level recall.
 
-7. Prefer breadth over repetition. Cover different subtopics, facts, concepts, applications and reasoning patterns related to the requested topic.
+General/Other:
+- Target difficulty: Moderate.
+- Generate balanced competitive-exam questions.
+- Prefer conceptual understanding and application over trivial recall.
 
-8. Make every question independently useful for exam preparation.
+TOPIC-SPECIFIC RULES:
 
-9. Questions must be factually accurate and appropriate for the selected competitive-exam style.
+1. The topic must always remain the primary subject.
+2. Never change the subject simply because the selected exam type is different.
+3. Example:
+   - Biology + UPSC = Biology questions written in UPSC-level style.
+   - Biology + Banking = Biology questions written in competitive Banking/General Awareness style.
+   - Maths + Banking = Mathematics questions written in Banking Quantitative Aptitude style.
+4. Never mix unrelated subjects into the requested topic.
+5. Do not generate questions from another subject merely because they are common in the selected exam.
 
-10. Make the questions genuinely new rather than paraphrasing known or previously generated questions.
+MATHS RULES:
 
-11. Do not use the same question stem with only names, dates, numbers or options changed.
+1. If the requested topic is Maths, Mathematics, Quantitative Aptitude, Arithmetic, Algebra, Geometry, Trigonometry, Number System, or a similar mathematical topic, generate ONLY mathematics questions.
+2. For Maths + Banking, use Banking/Quantitative Aptitude style mathematics such as:
+   - Simplification
+   - Number Series
+   - Percentage
+   - Ratio and Proportion
+   - Profit and Loss
+   - Simple and Compound Interest
+   - Time and Work
+   - Time, Speed and Distance
+   - Average
+   - Probability
+   - Permutation and Combination
+   - Quadratic Equations
+   - Data Interpretation
+   - Algebra
+   - Arithmetic
+3. Never generate General Knowledge, History, Geography, Polity, Current Affairs or unrelated questions when the requested topic is Maths.
+4. Every mathematical question must have exactly one unambiguous correct answer.
+5. Verify every calculation before returning the question.
+6. The correct answer MUST appear exactly once in the options.
+7. correctIndex must be the zero-based index of the correct option.
+8. Do not create ambiguous mathematical expressions.
+9. Avoid unclear expressions involving percentages, brackets, roots, powers or the word "of".
+10. Use standard mathematical notation that an Indian competitive-exam student can understand.
 
-12. Avoid trivial variations such as:
-   - "Who is..."
-   - "Which person is..."
-   - "Who among the following..."
-   when they are testing the same underlying fact.
+QUALITY AND CONSISTENCY RULES:
 
-13. If the avoid list contains questions, treat them as concepts that must be avoided, not merely as exact strings that must be avoided.
+1. Do not generate a question and then reconsider, revise, redesign or replace it.
+2. Do not include your reasoning process, internal analysis, drafts, corrections or alternative questions.
+3. The explanation must contain ONLY one concise final explanation of the answer.
+4. Never put phrases such as "Wait", "Let's re-evaluate", "Let's try", "Maybe", "I made a mistake", "Let's redesign", or similar reasoning text inside the explanation.
+5. Keep each explanation to one short sentence.
+6. Do not repeat questions from the avoid list.
+7. Do not create semantic duplicates of questions from the avoid list.
+8. Make the generated questions different from each other and cover different concepts whenever possible.
+9. Before returning the final JSON, internally verify:
+   - The question matches the requested topic.
+   - The question matches the selected exam style.
+   - The difficulty matches the selected exam style.
+   - There is exactly one correct answer.
+   - The correctIndex is correct.
+   - The explanation is concise.
+   - The JSON is valid.
 
-14. If there are many possible concepts within the topic, distribute the questions across different concepts instead of repeatedly focusing on the easiest or most common fact.
+QUESTION FORMAT:
 
-Generate exactly ${batchSize} questions.
+Return ONLY valid JSON.
 
-Respond with ONLY valid JSON, no markdown fences, no commentary, in exactly this shape:
-{"questions":[{"question":"...","options":["...","...","...","..."],"correctIndex":0,"explanation":"one concise sentence"}]}
+Do not use markdown.
+Do not use code fences.
+Do not write any text before or after the JSON.
 
-Keep explanations to one short sentence.`;
-  const userText = `Topic: ${topic || "General Knowledge"}\nExam type: ${examGuess || "Banking/SSC/UPSC style"}\nAvoid repeating these questions:\n${avoidList.slice(0, 15).join(" | ") || "none"}\nGenerate ${batchSize} new questions now.`;
+Return exactly this structure:
+
+{
+  "questions": [
+    {
+      "question": "question text",
+      "options": ["option 1", "option 2", "option 3", "option 4"],
+      "correctIndex": 0,
+      "explanation": "one short final explanation"
+    }
+  ]
+}
+
+The JSON must be complete and valid.
+
+Topic: ${topic || "General Knowledge"}
+Exam type: ${examGuess || "Banking"}
+
+Generate exactly ${batchSize} questions now.`;
+
+  const userText = `Requested topic: ${topic || "General Knowledge"}
+Selected exam style: ${examGuess || "Banking"}
+
+Previously used questions that must NOT be repeated:
+${avoidList
+  .slice(-10)
+  .map((q) => q.slice(0, 300))
+  .join(" | ") || "none"}
+
+Generate exactly ${batchSize} new questions.
+Return ONLY the required JSON.`;
+
   return callGemini(sys, [{ type: "text", text: userText }]);
 }
 
