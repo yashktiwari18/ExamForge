@@ -4,6 +4,11 @@ import {
   History as HistoryIcon, RotateCcw, AlertCircle, Loader2, Trophy,
   FileText, Sparkles, ImageIcon, LogOut, Eye
 } from "lucide-react";
+import {
+  extractFromImage,
+  generateBatch,
+  getAIErrorMessage,
+} from "./api/aiService";
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const fmtTime = (sec) => {
@@ -27,104 +32,111 @@ const TIMER_OPTIONS = [
   { key: "perQuestion", label: "60s / Question" },
 ];
 
-async function callGemini(system, content) {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim();
-  
+function normalizeQuestionMetadata(question, context = {}) {
+  const {
+    source = "generated",
+    topic = "General Knowledge",
+    examType = "General/Other",
+    difficulty = "medium",
+    subtopic = "General",
+  } = context;
 
-  if (!apiKey) {
-    throw new Error(
-      "Missing VITE_GEMINI_API_KEY. Add it to your .env file."
-    );
-  }
+  const id = question.id || uid();
 
-  const parts = Array.isArray(content)
-    ? content.map((part) => {
-        if (part.type === "image") {
-          return {
-            inline_data: {
-              mime_type: part.source.media_type,
-              data: part.source.data,
-            },
-          };
-        }
+  return {
+    ...question,
+    id,
+    source: question.source || source,
+    questionId: question.questionId || id,
+    topic: question.topic || topic,
+    examType: question.examType || examType,
+    difficulty: question.difficulty || difficulty,
+    subtopic: question.subtopic || subtopic,
+  };
+}
 
-        return {
-          text: part.text || "",
-        };
-      })
-    : [
-        {
-          text: String(content || ""),
-        },
-      ];
+function getWeakTopics(topicWise) {
+  return Object.entries(topicWise)
+    .filter(([, stats]) => (
+      stats.attempted >= 2 &&
+      (stats.correct / stats.attempted) < 0.6
+    ))
+    .map(([topic]) => topic);
+}
 
-  const response = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [
-            {
-              text: system,
-            },
-          ],
-        },
+function buildPerformance(answerResults) {
+  const records = Object.values(answerResults);
+  const topicWise = {};
+  const difficultyWise = {};
 
-        contents: [
-          {
-            role: "user",
-            parts: parts,
-          },
-        ],
+  records.forEach((record) => {
+    const topic = record.topic || "General Knowledge";
+    const difficulty = record.difficulty || "medium";
 
-        generationConfig: {
-          responseMimeType: "application/json",
-          maxOutputTokens: 8192,
-        },
-      }),
+    if (!topicWise[topic]) topicWise[topic] = { attempted: 0, correct: 0, wrong: 0 };
+    if (!difficultyWise[difficulty]) difficultyWise[difficulty] = { attempted: 0, correct: 0, wrong: 0 };
+
+    topicWise[topic].attempted += 1;
+    difficultyWise[difficulty].attempted += 1;
+
+    if (record.isCorrect) {
+      topicWise[topic].correct += 1;
+      difficultyWise[difficulty].correct += 1;
+    } else {
+      topicWise[topic].wrong += 1;
+      difficultyWise[difficulty].wrong += 1;
     }
-  );
+  });
 
-  const data = await response.json();
+  return {
+    totalAttempted: records.length,
+    correctAnswers: records.filter((record) => record.isCorrect).length,
+    wrongAnswers: records.filter((record) => !record.isCorrect).length,
+    topicWise,
+    difficultyWise,
+    weakTopics: getWeakTopics(topicWise),
+    recentlyWrongQuestions: records
+      .filter((record) => !record.isCorrect)
+      .sort((a, b) => new Date(b.answeredAt) - new Date(a.answeredAt))
+      .map((record) => record.questionId),
+  };
+}
 
-  if (!response.ok || data.error) {
-    throw new Error(
-      data?.error?.message ||
-        `Gemini API request failed (${response.status})`
-    );
-  }
+export function selectRevisionQuestions(questions, questionTracking, options = {}) {
+  const { limit } = options;
+  const excludedIds = new Set(options.excludedQuestionIds || []);
 
-  const result = (data.candidates || [])
-    .flatMap(
-      (candidate) => candidate.content?.parts || []
-    )
-    .map((part) => part.text || "")
-    .join("\n")
-    .trim();
+  const candidates = questions
+    .map((question, index) => ({
+      question,
+      index,
+      tracking: questionTracking[question.id] || questionTracking[question.questionId],
+    }))
+    .filter(({ question, tracking }) => {
+      const questionId = question.questionId || question.id;
+      return tracking &&
+        (tracking.isMistake || tracking.incorrectCount > 0) &&
+        !excludedIds.has(question.id) &&
+        !excludedIds.has(questionId);
+    })
+    .sort((a, b) => {
+      const aCurrentlyWrong = a.tracking.lastIsCorrect === false ? 1 : 0;
+      const bCurrentlyWrong = b.tracking.lastIsCorrect === false ? 1 : 0;
+      if (aCurrentlyWrong !== bCurrentlyWrong) return bCurrentlyWrong - aCurrentlyWrong;
 
-  if (!result) {
-    throw new Error("Gemini returned an empty response.");
-  }
+      const incorrectDifference = b.tracking.incorrectCount - a.tracking.incorrectCount;
+      if (incorrectDifference !== 0) return incorrectDifference;
 
-  const clean = result
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
+      const recentDifference = new Date(b.tracking.lastAttemptedAt) - new Date(a.tracking.lastAttemptedAt);
+      if (recentDifference !== 0) return recentDifference;
 
-  try {
-    return JSON.parse(clean);
-  } catch (error) {
-    console.error("Gemini response:", result);
-    throw new Error(
-      "Gemini returned invalid JSON. Please try again."
-    );
-  }
+      const aId = a.question.questionId || a.question.id;
+      const bId = b.question.questionId || b.question.id;
+      return String(aId).localeCompare(String(bId)) || a.index - b.index;
+    })
+    .map(({ question }) => question);
+
+  return typeof limit === "number" ? candidates.slice(0, Math.max(0, limit)) : candidates;
 }
 
 function toBase64(file) {
@@ -140,177 +152,6 @@ function toBase64(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
-}
-
-async function extractFromImage(img) {
-  const sys = `You are an expert OCR and exam-content analyst specializing in Indian competitive exams (Banking, UPSC, SSC, Railways, State PSC). Read the image carefully and extract every multiple-choice question exactly as written, with all its options. Respond with ONLY valid JSON, no markdown fences, no extra commentary, in exactly this shape:
-{"topic":"short subject/topic name","examType":"best-guess exam name or subject area","questions":[{"question":"exact question text","options":["option text","option text","option text","option text"],"correctIndex":0,"explanation":"one short sentence explaining the correct answer"}]}
-If the correct answer is marked, underlined, or circled in the image, use it. Otherwise use your own expert knowledge to determine the correct option. Keep explanations to one concise sentence. Extract at most 8 questions from this image. If no valid MCQs are visible, return {"topic":"","examType":"","questions":[]}.`;
-  const content = [
-    { type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } },
-    { type: "text", text: "Extract all MCQs visible in this image, following the required JSON shape exactly." },
-  ];
-  return callGemini(sys, content);
-}
-
-async function generateBatch(topic, examGuess, avoidList, batchSize) {
-  const sys = `You are an expert question-setter for Indian competitive exams.
-
-Generate exactly ${batchSize} original, high-quality multiple-choice questions.
-
-IMPORTANT RULES:
-
-1. The requested topic is the PRIMARY subject.
-2. The selected exam type controls the question style, difficulty, depth and thinking level, NOT the subject.
-3. Questions must be appropriate for serious Indian competitive-exam preparation.
-4. Do NOT generate school-level questions unless the selected exam style explicitly requires it.
-5. Do NOT make questions artificially difficult by using obscure, useless or extremely niche facts.
-6. Difficulty must come from conceptual understanding, application, reasoning, comparison, elimination, multiple statements, close options or multi-step thinking where appropriate.
-7. The question must test the candidate's understanding rather than simple one-line memorization whenever the selected exam style allows it.
-
-EXAM LEVEL RULES:
-
-UPSC:
-- Target difficulty: Moderate to Hard.
-- Prefer conceptual, analytical, statement-based and application-oriented questions.
-- Use multiple-statement questions where appropriate.
-- Use questions that require comparison, elimination and careful reading.
-- Options should be plausible and reasonably close.
-- Avoid basic school-level questions such as simple definitions or obvious one-line facts.
-- Do not make questions difficult merely by using obscure facts.
-- For subjects such as Biology, History, Geography, Polity and Economy, focus on concepts, relationships, applications, institutions, processes and implications.
-
-Banking:
-- Target difficulty: Moderate to Hard.
-- Questions should resemble competitive banking-exam preparation rather than school examinations.
-- Prefer application-based, conceptual, calculation-based and reasoning-oriented questions where appropriate.
-- For General Awareness subjects, use relevant competitive-exam knowledge with plausible distractors.
-- For Mathematics/Quantitative Aptitude, use multi-step and time-efficient competitive-exam problems.
-- Avoid extremely basic textbook questions.
-
-SSC:
-- Target difficulty: Easy to Moderate, with some Hard questions.
-- Questions should follow a competitive-exam pattern.
-- Prefer practical application, factual understanding, calculations, reasoning and close options.
-- Avoid questions that are so easy that they can be answered instantly without thinking.
-- Do not make questions unnecessarily advanced beyond the expected SSC level.
-
-Railways:
-- Target difficulty: Easy to Moderate.
-- Questions should be suitable for competitive railway examinations.
-- Use practical application, basic-to-intermediate concepts and competitive-exam style options.
-- Avoid very elementary school questions and avoid unnecessarily advanced questions.
-
-State PSC:
-- Target difficulty: Moderate to Hard.
-- Prefer conceptual, analytical and statement-based questions.
-- Use close options and elimination where appropriate.
-- Questions should test competitive-exam understanding rather than simple school-level recall.
-
-General/Other:
-- Target difficulty: Moderate.
-- Generate balanced competitive-exam questions.
-- Prefer conceptual understanding and application over trivial recall.
-
-TOPIC-SPECIFIC RULES:
-
-1. The topic must always remain the primary subject.
-2. Never change the subject simply because the selected exam type is different.
-3. Example:
-   - Biology + UPSC = Biology questions written in UPSC-level style.
-   - Biology + Banking = Biology questions written in competitive Banking/General Awareness style.
-   - Maths + Banking = Mathematics questions written in Banking Quantitative Aptitude style.
-4. Never mix unrelated subjects into the requested topic.
-5. Do not generate questions from another subject merely because they are common in the selected exam.
-
-MATHS RULES:
-
-1. If the requested topic is Maths, Mathematics, Quantitative Aptitude, Arithmetic, Algebra, Geometry, Trigonometry, Number System, or a similar mathematical topic, generate ONLY mathematics questions.
-2. For Maths + Banking, use Banking/Quantitative Aptitude style mathematics such as:
-   - Simplification
-   - Number Series
-   - Percentage
-   - Ratio and Proportion
-   - Profit and Loss
-   - Simple and Compound Interest
-   - Time and Work
-   - Time, Speed and Distance
-   - Average
-   - Probability
-   - Permutation and Combination
-   - Quadratic Equations
-   - Data Interpretation
-   - Algebra
-   - Arithmetic
-3. Never generate General Knowledge, History, Geography, Polity, Current Affairs or unrelated questions when the requested topic is Maths.
-4. Every mathematical question must have exactly one unambiguous correct answer.
-5. Verify every calculation before returning the question.
-6. The correct answer MUST appear exactly once in the options.
-7. correctIndex must be the zero-based index of the correct option.
-8. Do not create ambiguous mathematical expressions.
-9. Avoid unclear expressions involving percentages, brackets, roots, powers or the word "of".
-10. Use standard mathematical notation that an Indian competitive-exam student can understand.
-
-QUALITY AND CONSISTENCY RULES:
-
-1. Do not generate a question and then reconsider, revise, redesign or replace it.
-2. Do not include your reasoning process, internal analysis, drafts, corrections or alternative questions.
-3. The explanation must contain ONLY one concise final explanation of the answer.
-4. Never put phrases such as "Wait", "Let's re-evaluate", "Let's try", "Maybe", "I made a mistake", "Let's redesign", or similar reasoning text inside the explanation.
-5. Keep each explanation to one short sentence.
-6. Do not repeat questions from the avoid list.
-7. Do not create semantic duplicates of questions from the avoid list.
-8. Make the generated questions different from each other and cover different concepts whenever possible.
-9. Before returning the final JSON, internally verify:
-   - The question matches the requested topic.
-   - The question matches the selected exam style.
-   - The difficulty matches the selected exam style.
-   - There is exactly one correct answer.
-   - The correctIndex is correct.
-   - The explanation is concise.
-   - The JSON is valid.
-
-QUESTION FORMAT:
-
-Return ONLY valid JSON.
-
-Do not use markdown.
-Do not use code fences.
-Do not write any text before or after the JSON.
-
-Return exactly this structure:
-
-{
-  "questions": [
-    {
-      "question": "question text",
-      "options": ["option 1", "option 2", "option 3", "option 4"],
-      "correctIndex": 0,
-      "explanation": "one short final explanation"
-    }
-  ]
-}
-
-The JSON must be complete and valid.
-
-Topic: ${topic || "General Knowledge"}
-Exam type: ${examGuess || "Banking"}
-
-Generate exactly ${batchSize} questions now.`;
-
-  const userText = `Requested topic: ${topic || "General Knowledge"}
-Selected exam style: ${examGuess || "Banking"}
-
-Previously used questions that must NOT be repeated:
-${avoidList
-  .slice(-10)
-  .map((q) => q.slice(0, 300))
-  .join(" | ") || "none"}
-
-Generate exactly ${batchSize} new questions.
-Return ONLY the required JSON.`;
-
-  return callGemini(sys, [{ type: "text", text: userText }]);
 }
 
 export default function ExamForge() {
@@ -329,6 +170,9 @@ export default function ExamForge() {
   const [detectedTopic, setDetectedTopic] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [answerResults, setAnswerResults] = useState({});
+  const [questionTracking, setQuestionTracking] = useState({});
+  const [performance, setPerformance] = useState(buildPerformance({}));
   const [timeLeft, setTimeLeft] = useState(0);
   const [testStartedAt, setTestStartedAt] = useState(null);
   const [testResult, setTestResult] = useState(null);
@@ -399,8 +243,18 @@ export default function ExamForge() {
         const result = await extractFromImage(images[i]);
         if (result.topic) topics.push(result.topic);
         if (result.examType) examGuesses.push(result.examType);
+        const extractedTopic = result.topic || topicText.trim() || "General Knowledge";
+        const extractedExamType = result.examType || examType;
         (result.questions || []).forEach((q) => {
-          allQuestions.push({ id: uid(), source: "extracted", ...q });
+          allQuestions.push(
+            normalizeQuestionMetadata(q, {
+              source: "extracted",
+              topic: extractedTopic,
+              examType: extractedExamType,
+              difficulty: "medium",
+              subtopic: extractedTopic,
+            })
+          );
         });
       }
       const topic = topicText.trim() || topics[0] || "General Knowledge";
@@ -413,7 +267,15 @@ export default function ExamForge() {
           const avoidList = allQuestions.map((q) => q.question);
           const genResult = await generateBatch(topic, examGuess, avoidList, batchSize);
           (genResult.questions || []).forEach((q) => {
-            allQuestions.push({ id: uid(), source: "generated", ...q });
+            allQuestions.push(
+              normalizeQuestionMetadata(q, {
+                source: "generated",
+                topic,
+                examType: examGuess,
+                difficulty: "medium",
+                subtopic: topic,
+              })
+            );
           });
           remaining -= batchSize;
         }
@@ -426,6 +288,9 @@ export default function ExamForge() {
       setDetectedTopic(topic);
       setQuestions(allQuestions);
       setAnswers({});
+      setAnswerResults({});
+      setQuestionTracking({});
+      setPerformance(buildPerformance({}));
       setCurrentIndex(0);
       if (timerMode === "total") setTimeLeft(Math.max(60, Math.round(allQuestions.length * 72)));
       else if (timerMode === "perQuestion") setTimeLeft(60);
@@ -433,13 +298,59 @@ export default function ExamForge() {
       setScreen("quiz");
     } catch (e) {
       console.error(e);
-      setError("Something went wrong while building your test. Please try again.");
+      setError(getAIErrorMessage(e));
       setScreen("setup");
     }
   }
 
   function selectAnswer(qId, idx) {
     setAnswers((prev) => ({ ...prev, [qId]: idx }));
+
+    const question = questions.find((q) => q.id === qId);
+    const correctOption = question?.correctIndex;
+    const isCorrect = typeof correctOption === "number" ? idx === correctOption : false;
+    const answeredAt = new Date().toISOString();
+    setAnswerResults((prev) => {
+      const next = {
+        ...prev,
+        [qId]: {
+          questionId: question?.questionId || question?.id || qId,
+          selectedOption: idx,
+          correctOption,
+          isCorrect,
+          topic: question?.topic || "General Knowledge",
+          difficulty: question?.difficulty || "medium",
+          answeredAt,
+        },
+      };
+      setPerformance(buildPerformance(next));
+      return next;
+    });
+    setQuestionTracking((prev) => {
+      const previous = prev[qId] || {
+        questionId: question?.questionId || question?.id || qId,
+        topic: question?.topic || "General Knowledge",
+        attempts: 0,
+        incorrectCount: 0,
+        correctCount: 0,
+        isMistake: false,
+      };
+
+      return {
+        ...prev,
+        [qId]: {
+          ...previous,
+          questionId: question?.questionId || previous.questionId || qId,
+          topic: question?.topic || previous.topic || "General Knowledge",
+          attempts: previous.attempts + 1,
+          incorrectCount: previous.incorrectCount + (isCorrect ? 0 : 1),
+          correctCount: previous.correctCount + (isCorrect ? 1 : 0),
+          isMistake: previous.isMistake || !isCorrect,
+          lastIsCorrect: isCorrect,
+          lastAttemptedAt: answeredAt,
+        },
+      };
+    });
   }
 
   function goNext() {
@@ -497,7 +408,14 @@ export default function ExamForge() {
       id: uid(), date: new Date().toISOString(), examType, topic: detectedTopic,
       total, correct, wrong, unattempted, negativeMarking,
       score: Math.round(rawScore * 100) / 100, maxScore: total, timeTakenSec,
-      questions: questions.map((q) => ({ ...q, selected: answers[q.id] !== undefined ? answers[q.id] : null })),
+      questions: questions.map((q) => ({
+        ...q,
+        selected: answers[q.id] !== undefined ? answers[q.id] : null,
+        answerResult: answerResults[q.id] || null,
+      })),
+      answerResults: Object.values(answerResults),
+      questionTracking: Object.values(questionTracking),
+      performance,
     };
     setTestResult(result);
     saveTestRecord(result);
@@ -528,6 +446,9 @@ export default function ExamForge() {
     setScreen("setup");
     setQuestions([]);
     setAnswers({});
+    setAnswerResults({});
+    setQuestionTracking({});
+    setPerformance(buildPerformance({}));
     setCurrentIndex(0);
     setTestResult(null);
     setError("");

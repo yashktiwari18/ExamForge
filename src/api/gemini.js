@@ -1,102 +1,4 @@
-async function callGemini(system, content) {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim();
-
-
-  if (!apiKey) {
-    throw new Error(
-      "Missing VITE_GEMINI_API_KEY. Add it to your .env file."
-    );
-  }
-
-  const parts = Array.isArray(content)
-    ? content.map((part) => {
-        if (part.type === "image") {
-          return {
-            inline_data: {
-              mime_type: part.source.media_type,
-              data: part.source.data,
-            },
-          };
-        }
-
-        return {
-          text: part.text || "",
-        };
-      })
-    : [
-        {
-          text: String(content || ""),
-        },
-      ];
-
-  const response = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [
-            {
-              text: system,
-            },
-          ],
-        },
-
-        contents: [
-          {
-            role: "user",
-            parts: parts,
-          },
-        ],
-
-        generationConfig: {
-          responseMimeType: "application/json",
-          maxOutputTokens: 8192,
-        },
-      }),
-    }
-  );
-
-  const data = await response.json();
-
-  if (!response.ok || data.error) {
-    throw new Error(
-      data?.error?.message ||
-        `Gemini API request failed (${response.status})`
-    );
-  }
-
-  const result = (data.candidates || [])
-    .flatMap(
-      (candidate) => candidate.content?.parts || []
-    )
-    .map((part) => part.text || "")
-    .join("\n")
-    .trim();
-
-  if (!result) {
-    throw new Error("Gemini returned an empty response.");
-  }
-
-  const clean = result
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-
-  try {
-    return JSON.parse(clean);
-  } catch (error) {
-    console.error("Gemini response:", result);
-    throw new Error(
-      "Gemini returned invalid JSON. Please try again."
-    );
-  }
-}
+import { requestGeminiJson } from "./providers/geminiRequest";
 
 export async function extractFromImage(img) {
   const sys = `You are an expert OCR and exam-content analyst specializing in Indian competitive exams (Banking, UPSC, SSC, Railways, State PSC). Read the image carefully and extract every multiple-choice question exactly as written, with all its options. Respond with ONLY valid JSON, no markdown fences, no extra commentary, in exactly this shape:
@@ -106,7 +8,7 @@ If the correct answer is marked, underlined, or circled in the image, use it. Ot
     { type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } },
     { type: "text", text: "Extract all MCQs visible in this image, following the required JSON shape exactly." },
   ];
-  return callGemini(sys, content);
+  return requestGeminiJson(sys, content);
 }
 
 export async function generateBatch(topic, examGuess, avoidList, batchSize) {
@@ -266,5 +168,12 @@ ${avoidList
 Generate exactly ${batchSize} new questions.
 Return ONLY the required JSON.`;
 
-  return callGemini(sys, [{ type: "text", text: userText }]);
+  return requestGeminiJson(sys, [{ type: "text", text: userText }]);
 }
+
+const geminiProvider = {
+  extractFromImage,
+  generateBatch,
+};
+
+export default geminiProvider;
