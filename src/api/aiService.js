@@ -2,8 +2,10 @@ import { getAIErrorMessage } from "./aiErrors";
 
 async function requestAI(system, content) {
   let response;
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
   try {
-    response = await fetch("/api/ai", {
+
+    response = await fetch(`${API_BASE_URL}/api/ai`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
