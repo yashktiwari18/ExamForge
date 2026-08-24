@@ -10,6 +10,9 @@ import {
   getAIErrorMessage,
 } from "./api/aiService";
 
+
+import { filterPYQs } from "./utils/pyqRepository";
+
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const fmtTime = (sec) => {
   const s = Math.max(0, sec);
@@ -53,6 +56,56 @@ function normalizeQuestionMetadata(question, context = {}) {
     difficulty: question.difficulty || difficulty,
     subtopic: question.subtopic || subtopic,
   };
+}
+
+function getRepositoryPYQs(examGuess, topic) {
+  if (examGuess === "State PCS") {
+    return filterPYQs({
+      verifiedOnly: true,
+      topic,
+    }).filter((pyq) => isStatePCSPYQ(pyq));
+  }
+
+  return filterPYQs({
+    exam: examGuess,
+    verifiedOnly: true,
+    topic,
+  });
+}
+
+function isStatePCSPYQ(pyq) {
+  if (!pyq || pyq.state === "All India") return false;
+
+  const exam = String(pyq.exam || "").toLowerCase();
+
+  const statePCSKeywords = [
+    "bpsc",
+    "uppsc",
+    "mppsc",
+    "rpsc",
+    "jpsc",
+    "opsc",
+    "wbcs",
+    "wbpsc",
+    "hpsc",
+    "gpsc",
+    "cgpsc",
+    "jkpsc",
+    "kpsc",
+    "appsc",
+    "tspsc",
+    "tnpsc",
+    "ukpsc",
+    "hppsc",
+    "ppsc",
+    "mpsc",
+    "public service commission",
+    "provincial civil service",
+    "civil services examination",
+    "pcs",
+  ];
+
+  return statePCSKeywords.some((keyword) => exam.includes(keyword));
 }
 
 function getWeakTopics(topicWise) {
@@ -259,7 +312,21 @@ export default function ExamForge() {
       }
       const topic = topicText.trim() || topics[0] || "General Knowledge";
       const examGuess = examGuesses[0] || examType;
-      if (numGenerate > 0) {
+      const repositoryPYQs = getRepositoryPYQs(examGuess, topic);
+
+      repositoryPYQs.forEach((pyq) => {
+        allQuestions.push(
+          normalizeQuestionMetadata(pyq, {
+            source: "pyq",
+            topic: pyq.topic,
+            examType: examGuess,
+            difficulty: "medium",
+            subtopic: pyq.topic,
+          })
+        );
+      });
+
+if (numGenerate > 0) {
         let remaining = numGenerate;
         while (remaining > 0) {
           const batchSize = Math.min(5, remaining);

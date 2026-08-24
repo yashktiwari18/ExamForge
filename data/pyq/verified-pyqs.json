@@ -1,0 +1,54 @@
+{
+  "pyqs": [
+    {
+      "id": "upsc-cse-2024-gs1-001",
+      "state": "All India",
+      "exam": "UPSC Civil Services Examination",
+      "year": 2024,
+      "paper": "General Studies Paper I",
+      "subject": "Indian Polity",
+      "topic": "Fundamental Rights",
+      "question": "Which one of the following Articles of the Constitution of India safeguards one's right to marry a person of one's choice?",
+      "options": [
+        "Article 14",
+        "Article 19",
+        "Article 21",
+        "Article 25"
+      ],
+      "correctIndex": 2,
+      "explanation": "The Supreme Court has recognized the right to marry a person of one's choice as part of the right to life and personal liberty under Article 21.",
+      "source": {
+        "type": "pyq",
+        "authority": "UPSC",
+        "verified": false,
+        "sourceUrl": "",
+        "sourceFile": "upsc-cse-prelims-2024-gs1.pdf"
+      }
+    },
+    {
+      "id": "ssc-cgl-2023-tier1-001",
+      "state": "All India",
+      "exam": "SSC Combined Graduate Level Examination",
+      "year": 2023,
+      "paper": "Tier I",
+      "subject": "General Awareness",
+      "topic": "Indian Geography",
+      "question": "Which of the following rivers flows through a rift valley?",
+      "options": [
+        "Godavari",
+        "Narmada",
+        "Yamuna",
+        "Mahanadi"
+      ],
+      "correctIndex": 1,
+      "explanation": "The Narmada flows westward through a rift valley between the Vindhya and Satpura ranges.",
+      "source": {
+        "type": "pyq",
+        "authority": "SSC",
+        "verified": false,
+        "sourceUrl": "",
+        "sourceFile": "ssc-cgl-tier-1-2023.pdf"
+      }
+    }
+  ]
+}

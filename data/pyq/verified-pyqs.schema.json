@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ExamForge Verified PYQs",
+  "description": "Standalone storage schema for verified Previous Year Questions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["pyqs"],
+  "properties": {
+    "pyqs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/pyq"
+      }
+    }
+  },
+  "$defs": {
+    "pyq": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "state",
+        "exam",
+        "year",
+        "paper",
+        "subject",
+        "topic",
+        "question",
+        "options",
+        "correctIndex",
+        "explanation",
+        "source"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exam": {
+          "type": "string",
+          "minLength": 1
+        },
+        "year": {
+          "type": "integer",
+          "minimum": 1900
+        },
+        "paper": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "topic": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "options": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "correctIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "authority",
+            "verified",
+            "sourceUrl",
+            "sourceFile"
+          ],
+          "properties": {
+            "type": {
+              "const": "pyq"
+            },
+            "authority": {
+              "type": "string",
+              "minLength": 1
+            },
+            "verified": {
+              "type": "boolean"
+            },
+            "sourceUrl": {
+              "type": "string",
+              "format": "uri-reference"
+            },
+            "sourceFile": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

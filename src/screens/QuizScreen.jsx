@@ -32,11 +32,49 @@ export default function QuizScreen({ questions, currentQ, currentIndex, answers,
       <div className="ef-card p-5 sm:p-6">
         <div className="ef-corner tl" /><div className="ef-corner tr" /><div className="ef-corner bl" /><div className="ef-corner br" />
 
-        {currentQ.source === "generated" && (
-          <div className="inline-flex items-center gap-1 ef-mono text-[10px] uppercase tracking-wide px-2 py-0.5 rounded mb-3" style={{ background: "rgba(47,110,79,0.12)", color: "var(--ledger)" }}>
-            <Sparkles size={10} /> New practice question
+        currentQ.source?.type === "pyq" (
+          <div
+            className="inline-flex flex-wrap items-center gap-1 ef-mono text-[10px] uppercase tracking-wide px-2 py-0.5 rounded mb-3"
+            style={{
+              background: "rgba(36,72,110,0.10)",
+              color: "var(--ink)",
+            }}
+          >
+            <span>🏛️ Actual PYQ</span>
+
+            {currentQ.exam && (
+              <span>· {currentQ.exam}</span>
+            )}
+
+            {currentQ.year && (
+              <span>· {currentQ.year}</span>
+            )}
+
+            {currentQ.paper && (
+              <span>· {currentQ.paper}</span>
+            )}
           </div>
-        )}
+        ) : currentQ.source === "adaptive" ? (
+          <div
+            className="inline-flex items-center gap-1 ef-mono text-[10px] uppercase tracking-wide px-2 py-0.5 rounded mb-3"
+            style={{
+              background: "rgba(47,110,79,0.12)",
+              color: "var(--ledger)",
+            }}
+          >
+            <Sparkles size={10} /> Adaptive Practice Question
+          </div>
+        ) : currentQ.source === "generated" ? (
+          <div
+            className="inline-flex items-center gap-1 ef-mono text-[10px] uppercase tracking-wide px-2 py-0.5 rounded mb-3"
+            style={{
+              background: "rgba(47,110,79,0.12)",
+              color: "var(--ledger)",
+            }}
+          >
+            <Sparkles size={10} /> New Practice Question
+          </div>
+        ) : null}
 
         <div className="ef-serif font-semibold text-lg leading-snug mb-5" style={{ color: "var(--graphite)" }}>
           {currentQ.question}

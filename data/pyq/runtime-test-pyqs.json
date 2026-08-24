@@ -1,0 +1,29 @@
+{
+  "pyqs": [
+    {
+      "id": "runtime-test-upsc-2024-001",
+      "state": "All India",
+      "exam": "UPSC Civil Services Examination",
+      "year": 2024,
+      "paper": "General Studies Paper I",
+      "subject": "Indian Polity",
+      "topic": "Fundamental Rights",
+      "question": "Which one of the following Articles of the Constitution of India safeguards one's right to marry a person of one's choice?",
+      "options": [
+        "Article 14",
+        "Article 19",
+        "Article 21",
+        "Article 25"
+      ],
+      "correctIndex": 2,
+      "explanation": "The right to marry a person of one's choice has been recognized as part of the right to life and personal liberty under Article 21.",
+      "source": {
+        "type": "pyq",
+        "authority": "UPSC",
+        "verified": true,
+        "sourceUrl": "",
+        "sourceFile": "runtime-test-fixture"
+      }
+    }
+  ]
+}
