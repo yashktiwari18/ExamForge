@@ -59,19 +59,59 @@ function normalizeQuestionMetadata(question, context = {}) {
 }
 
 function getRepositoryPYQs(examGuess, topic) {
-  if (examGuess === "State PCS") {
-    return filterPYQs({
-      verifiedOnly: true,
-      topic,
-    }).filter((pyq) => isStatePCSPYQ(pyq));
+  const normalizedExam = String(examGuess || "").trim().toLowerCase();
+  const normalizedTopic = String(topic || "").trim().toLowerCase();
+
+  let pyqs = filterPYQs({
+    verifiedOnly: true,
+  });
+
+  // -----------------------------
+  // EXAM FILTER
+  // -----------------------------
+
+  if (normalizedExam === "upsc") {
+    pyqs = pyqs.filter((pyq) =>
+      String(pyq.exam || "").toLowerCase().includes("upsc")
+    );
+  } else if (normalizedExam === "ssc") {
+    pyqs = pyqs.filter((pyq) =>
+      String(pyq.exam || "").toLowerCase().includes("ssc")
+    );
+  } else if (normalizedExam === "railways") {
+    pyqs = pyqs.filter((pyq) =>
+      String(pyq.exam || "").toLowerCase().includes("railway")
+    );
+  } else if (normalizedExam === "state pcs") {
+    pyqs = pyqs.filter((pyq) => isStatePCSPYQ(pyq));
+  } else if (normalizedExam === "banking") {
+    pyqs = pyqs.filter((pyq) =>
+      String(pyq.exam || "").toLowerCase().includes("bank")
+    );
   }
 
-  return filterPYQs({
-    exam: examGuess,
-    verifiedOnly: true,
-    topic,
-  });
+  // -----------------------------
+  // TOPIC / SUBJECT FILTER
+  // -----------------------------
+
+  if (normalizedTopic) {
+    pyqs = pyqs.filter((pyq) => {
+      const subject = String(pyq.subject || "").toLowerCase();
+      const pyqTopic = String(pyq.topic || "").toLowerCase();
+
+      return (
+        subject === normalizedTopic ||
+        pyqTopic === normalizedTopic ||
+        subject.includes(normalizedTopic) ||
+        pyqTopic.includes(normalizedTopic) ||
+        normalizedTopic.includes(subject)
+      );
+    });
+  }
+
+  return pyqs;
 }
+
 
 function isStatePCSPYQ(pyq) {
   if (!pyq || pyq.state === "All India") return false;
@@ -101,12 +141,15 @@ function isStatePCSPYQ(pyq) {
     "mpsc",
     "public service commission",
     "provincial civil service",
-    "civil services examination",
     "pcs",
   ];
 
-  return statePCSKeywords.some((keyword) => exam.includes(keyword));
+  return statePCSKeywords.some((keyword) =>
+    exam.includes(keyword)
+  );
 }
+
+
 
 function getWeakTopics(topicWise) {
   return Object.entries(topicWise)
@@ -799,11 +842,41 @@ function QuizScreen({ questions, currentQ, currentIndex, answers, selectAnswer, 
       <div className="ef-card p-5 sm:p-6">
         <div className="ef-corner tl" /><div className="ef-corner tr" /><div className="ef-corner bl" /><div className="ef-corner br" />
 
-        {currentQ.source === "generated" && (
-          <div className="inline-flex items-center gap-1 ef-mono text-[10px] uppercase tracking-wide px-2 py-0.5 rounded mb-3" style={{ background: "rgba(47,110,79,0.12)", color: "var(--ledger)" }}>
+        {(currentQ.source?.type === "pyq" || currentQ.source === "pyq") ? (
+          <div
+            className="inline-flex flex-wrap items-center gap-1 ef-mono text-[10px] uppercase tracking-wide px-2 py-0.5 rounded mb-3"
+            style={{
+              background: "rgba(36,72,110,0.10)",
+              color: "var(--ink)",
+            }}
+          >
+            <span>🏛️ Actual PYQ</span>
+            {currentQ.exam && <span>· {currentQ.exam}</span>}
+            {currentQ.year && <span>· {currentQ.year}</span>}
+            {currentQ.paper && <span>· {currentQ.paper}</span>}
+            {currentQ.subject && <span>· {currentQ.subject}</span>}
+          </div>
+        ) : currentQ.source === "adaptive" ? (
+          <div
+            className="inline-flex items-center gap-1 ef-mono text-[10px] uppercase tracking-wide px-2 py-0.5 rounded mb-3"
+            style={{
+              background: "rgba(47,110,79,0.12)",
+              color: "var(--ledger)",
+            }}
+          >
+            <Sparkles size={10} /> Adaptive practice question
+          </div>
+        ) : currentQ.source === "generated" ? (
+          <div
+            className="inline-flex items-center gap-1 ef-mono text-[10px] uppercase tracking-wide px-2 py-0.5 rounded mb-3"
+            style={{
+              background: "rgba(47,110,79,0.12)",
+              color: "var(--ledger)",
+            }}
+          >
             <Sparkles size={10} /> New practice question
           </div>
-        )}
+        ) : null}
 
         <div className="ef-serif font-semibold text-lg leading-snug mb-5" style={{ color: "var(--graphite)" }}>
           {currentQ.question}

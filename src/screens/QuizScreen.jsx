@@ -32,7 +32,7 @@ export default function QuizScreen({ questions, currentQ, currentIndex, answers,
       <div className="ef-card p-5 sm:p-6">
         <div className="ef-corner tl" /><div className="ef-corner tr" /><div className="ef-corner bl" /><div className="ef-corner br" />
 
-        currentQ.source?.type === "pyq" (
+        {(currentQ.source?.type === "pyq" || currentQ.source === "pyq") ? (
           <div
             className="inline-flex flex-wrap items-center gap-1 ef-mono text-[10px] uppercase tracking-wide px-2 py-0.5 rounded mb-3"
             style={{
@@ -41,18 +41,10 @@ export default function QuizScreen({ questions, currentQ, currentIndex, answers,
             }}
           >
             <span>🏛️ Actual PYQ</span>
-
-            {currentQ.exam && (
-              <span>· {currentQ.exam}</span>
-            )}
-
-            {currentQ.year && (
-              <span>· {currentQ.year}</span>
-            )}
-
-            {currentQ.paper && (
-              <span>· {currentQ.paper}</span>
-            )}
+            {currentQ.exam && <span>· {currentQ.exam}</span>}
+            {currentQ.year && <span>· {currentQ.year}</span>}
+            {currentQ.paper && <span>· {currentQ.paper}</span>}
+            {currentQ.subject && <span>· {currentQ.subject}</span>}
           </div>
         ) : currentQ.source === "adaptive" ? (
           <div
