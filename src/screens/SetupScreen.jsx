@@ -4,15 +4,19 @@ import {
 } from "lucide-react";
 import SectionLabel from "../components/SectionLabel";
 import ChipRow from "../components/ChipRow";
-import { EXAM_TYPES, NUM_GEN_OPTIONS, NEG_OPTIONS, TIMER_OPTIONS } from "../constants";
+import { NUM_GEN_OPTIONS, NEG_OPTIONS, TIMER_OPTIONS } from "../constants";
+import { getExams, getSubExams, getExamLevelMetadata } from "../constants/examConfig";
 
 export default function SetupScreen(props) {
   const {
     images, dragActive, setDragActive, handleFiles, removeImage, fileInputRef,
-    topicText, setTopicText, examType, setExamType, numGenerate, setNumGenerate,
-    negativeMarking, setNegativeMarking, timerMode, setTimerMode, error, runGeneration,
+    topicText, setTopicText, examType, setExamType, subExam, setSubExam,
+    numGenerate, setNumGenerate, negativeMarking, setNegativeMarking,
+    timerMode, setTimerMode, error, runGeneration,
   } = props;
   const canStart = images.length > 0 || topicText.trim().length > 0;
+  const categories = getExams();
+  const availableSubExams = examType ? getSubExams(examType) : [];
 
   return (
     <div className="ef-anim">
@@ -73,8 +77,57 @@ export default function SetupScreen(props) {
       <div className="ef-card p-5 sm:p-6 mb-5">
         <div className="ef-corner tl" /><div className="ef-corner tr" /><div className="ef-corner bl" /><div className="ef-corner br" />
 
-        <SectionLabel icon={<FileText size={14} />} text="3. Exam style" />
-        <ChipRow options={EXAM_TYPES} value={examType} onChange={setExamType} />
+        <SectionLabel icon={<FileText size={14} />} text="3. Exam Category & Sub Exam" />
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+          <div>
+            <label className="text-[11px] ef-mono uppercase tracking-wide block mb-1" style={{ color: "var(--pencil)" }}>
+              Exam Category
+            </label>
+            <select
+              value={examType}
+              onChange={(e) => {
+                const newCat = e.target.value;
+                setExamType(newCat);
+                if (setSubExam) setSubExam("");
+              }}
+              className="w-full px-3 py-2 rounded text-sm outline-none ef-input cursor-pointer"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {examType && availableSubExams.length > 0 && (
+            <div className="ef-anim">
+              <label className="text-[11px] ef-mono uppercase tracking-wide block mb-1" style={{ color: "var(--pencil)" }}>
+                Sub Exam
+              </label>
+              <select
+                value={subExam || ""}
+                onChange={(e) => setSubExam && setSubExam(e.target.value)}
+                className="w-full px-3 py-2 rounded text-sm outline-none ef-input cursor-pointer"
+              >
+                <option value="">All / General {examType}</option>
+                {availableSubExams.map((sub) => (
+                  <option key={sub.id} value={sub.name}>
+                    {sub.name} — {sub.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {subExam && (
+          <div className="mt-2 text-xs flex items-center gap-1.5 ef-anim" style={{ color: "var(--pencil)" }}>
+            <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "var(--ink)" }}></span>
+            Target Level: <span className="font-semibold" style={{ color: "var(--ink)" }}>{getExamLevelMetadata(examType, subExam)}</span>
+          </div>
+        )}
 
         <div className="mt-5">
           <SectionLabel icon={<Sparkles size={14} />} text="4. New practice questions to generate" />

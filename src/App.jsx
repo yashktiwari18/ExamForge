@@ -13,6 +13,8 @@ import {
 
 import { filterPYQs } from "./utils/pyqRepository";
 
+import { getExams, getSubExams, getExamLevelMetadata } from "./constants/examConfig";
+
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const fmtTime = (sec) => {
   const s = Math.max(0, sec);
@@ -21,7 +23,6 @@ const fmtTime = (sec) => {
   return `${m}:${r.toString().padStart(2, "0")}`;
 };
 
-const EXAM_TYPES = ["Banking", "UPSC", "SSC", "Railways", "State PSC", "General/Other"];
 const NUM_GEN_OPTIONS = [0, 5, 10, 15];
 const NEG_OPTIONS = [
   { label: "No Negative Marking", value: 0 },
@@ -70,21 +71,21 @@ function getRepositoryPYQs(examGuess, topic) {
   // EXAM FILTER
   // -----------------------------
 
-  if (normalizedExam === "upsc") {
+  if (normalizedExam.includes("upsc")) {
     pyqs = pyqs.filter((pyq) =>
       String(pyq.exam || "").toLowerCase().includes("upsc")
     );
-  } else if (normalizedExam === "ssc") {
+  } else if (normalizedExam.includes("ssc")) {
     pyqs = pyqs.filter((pyq) =>
       String(pyq.exam || "").toLowerCase().includes("ssc")
     );
-  } else if (normalizedExam === "railways") {
+  } else if (normalizedExam.includes("railway")) {
     pyqs = pyqs.filter((pyq) =>
       String(pyq.exam || "").toLowerCase().includes("railway")
     );
-  } else if (normalizedExam === "state pcs") {
+  } else if (normalizedExam.includes("state pcs") || normalizedExam.includes("pcs") || normalizedExam.includes("psc")) {
     pyqs = pyqs.filter((pyq) => isStatePCSPYQ(pyq));
-  } else if (normalizedExam === "banking") {
+  } else if (normalizedExam.includes("bank")) {
     pyqs = pyqs.filter((pyq) =>
       String(pyq.exam || "").toLowerCase().includes("bank")
     );
@@ -256,6 +257,7 @@ export default function ExamForge() {
   const [dragActive, setDragActive] = useState(false);
   const [topicText, setTopicText] = useState("");
   const [examType, setExamType] = useState("Banking");
+  const [subExam, setSubExam] = useState("");
   const [numGenerate, setNumGenerate] = useState(5);
   const [negativeMarking, setNegativeMarking] = useState(0.25);
   const [timerMode, setTimerMode] = useState("total");
@@ -354,7 +356,9 @@ export default function ExamForge() {
         });
       }
       const topic = topicText.trim() || topics[0] || "General Knowledge";
-      const examGuess = examGuesses[0] || examType;
+      const levelMeta = getExamLevelMetadata(examType, subExam);
+      const fullExamName = subExam ? `${examType} — ${subExam} (Target Level: ${levelMeta})` : `${examType} (Target Level: ${levelMeta})`;
+      const examGuess = examGuesses[0] || fullExamName;
       const repositoryPYQs = getRepositoryPYQs(examGuess, topic);
 
       repositoryPYQs.forEach((pyq) => {
@@ -532,7 +536,7 @@ export default function ExamForge() {
     const rawScore = correct * 1 - wrong * negativeMarking;
     const timeTakenSec = Math.round((Date.now() - (testStartedAt || Date.now())) / 1000);
     const result = {
-      id: uid(), date: new Date().toISOString(), examType, topic: detectedTopic,
+      id: uid(), date: new Date().toISOString(), examType: subExam ? `${examType} (${subExam})` : examType, topic: detectedTopic,
       total, correct, wrong, unattempted, negativeMarking,
       score: Math.round(rawScore * 100) / 100, maxScore: total, timeTakenSec,
       questions: questions.map((q) => ({
@@ -624,6 +628,7 @@ export default function ExamForge() {
             handleFiles={handleFiles} removeImage={removeImage} fileInputRef={fileInputRef}
             topicText={topicText} setTopicText={setTopicText}
             examType={examType} setExamType={setExamType}
+            subExam={subExam} setSubExam={setSubExam}
             numGenerate={numGenerate} setNumGenerate={setNumGenerate}
             negativeMarking={negativeMarking} setNegativeMarking={setNegativeMarking}
             timerMode={timerMode} setTimerMode={setTimerMode}
@@ -677,10 +682,13 @@ export default function ExamForge() {
 function SetupScreen(props) {
   const {
     images, dragActive, setDragActive, handleFiles, removeImage, fileInputRef,
-    topicText, setTopicText, examType, setExamType, numGenerate, setNumGenerate,
-    negativeMarking, setNegativeMarking, timerMode, setTimerMode, error, runGeneration,
+    topicText, setTopicText, examType, setExamType, subExam, setSubExam,
+    numGenerate, setNumGenerate, negativeMarking, setNegativeMarking,
+    timerMode, setTimerMode, error, runGeneration,
   } = props;
   const canStart = images.length > 0 || topicText.trim().length > 0;
+  const categories = getExams();
+  const availableSubExams = examType ? getSubExams(examType) : [];
 
   return (
     <div className="ef-anim">
@@ -741,8 +749,57 @@ function SetupScreen(props) {
       <div className="ef-card p-5 sm:p-6 mb-5">
         <div className="ef-corner tl" /><div className="ef-corner tr" /><div className="ef-corner bl" /><div className="ef-corner br" />
 
-        <SectionLabel icon={<FileText size={14} />} text="3. Exam style" />
-        <ChipRow options={EXAM_TYPES} value={examType} onChange={setExamType} />
+        <SectionLabel icon={<FileText size={14} />} text="3. Exam Category & Sub Exam" />
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+          <div>
+            <label className="text-[11px] ef-mono uppercase tracking-wide block mb-1" style={{ color: "var(--pencil)" }}>
+              Exam Category
+            </label>
+            <select
+              value={examType}
+              onChange={(e) => {
+                const newCat = e.target.value;
+                setExamType(newCat);
+                setSubExam("");
+              }}
+              className="w-full px-3 py-2 rounded text-sm outline-none ef-input cursor-pointer"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {examType && availableSubExams.length > 0 && (
+            <div className="ef-anim">
+              <label className="text-[11px] ef-mono uppercase tracking-wide block mb-1" style={{ color: "var(--pencil)" }}>
+                Sub Exam
+              </label>
+              <select
+                value={subExam}
+                onChange={(e) => setSubExam(e.target.value)}
+                className="w-full px-3 py-2 rounded text-sm outline-none ef-input cursor-pointer"
+              >
+                <option value="">All / General {examType}</option>
+                {availableSubExams.map((sub) => (
+                  <option key={sub.id} value={sub.name}>
+                    {sub.name} — {sub.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {subExam && (
+          <div className="mt-2 text-xs flex items-center gap-1.5 ef-anim" style={{ color: "var(--pencil)" }}>
+            <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "var(--ink)" }}></span>
+            Target Level: <span className="font-semibold" style={{ color: "var(--ink)" }}>{getExamLevelMetadata(examType, subExam)}</span>
+          </div>
+        )}
 
         <div className="mt-5">
           <SectionLabel icon={<Sparkles size={14} />} text="4. New practice questions to generate" />

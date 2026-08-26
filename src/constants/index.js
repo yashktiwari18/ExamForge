@@ -14,3 +14,4 @@ export const TIMER_OPTIONS = [
   { key: "total", label: "Full-Test Timer" },
   { key: "perQuestion", label: "60s / Question" },
 ];
+export { EXAM_CONFIG, getExams, getSubExams, getExamLevelMetadata } from "./examConfig";
