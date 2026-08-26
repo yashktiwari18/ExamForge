@@ -26,5 +26,9 @@ export function getAIErrorMessage(error) {
     return error.userMessage;
   }
 
+  if (error?.message) {
+    return error.message;
+  }
+
   return "Something went wrong while building your test. Please try again.";
 }

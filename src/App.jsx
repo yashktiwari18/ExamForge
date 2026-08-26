@@ -369,25 +369,42 @@ export default function ExamForge() {
         );
       });
 
-if (numGenerate > 0) {
-        let remaining = numGenerate;
+      const effectiveNumGenerate = (numGenerate === 0 && images.length === 0 && repositoryPYQs.length === 0) ? 5 : numGenerate;
+
+      if (effectiveNumGenerate > 0) {
+        let remaining = effectiveNumGenerate;
+        let batchIndex = 0;
         while (remaining > 0) {
-          const batchSize = Math.min(5, remaining);
+          const batchSize = Math.min(10, remaining);
+          if (batchIndex > 0) {
+            // Small pause to prevent rate limiting between requests
+            await new Promise((res) => setTimeout(res, 1000));
+          }
           setProcessingStatus(`Generating ${batchSize} new practice question${batchSize > 1 ? "s" : ""}...`);
           const avoidList = allQuestions.map((q) => q.question);
-          const genResult = await generateBatch(topic, examGuess, avoidList, batchSize);
-          (genResult.questions || []).forEach((q) => {
-            allQuestions.push(
-              normalizeQuestionMetadata(q, {
-                source: "generated",
-                topic,
-                examType: examGuess,
-                difficulty: "medium",
-                subtopic: topic,
-              })
-            );
-          });
+          try {
+            const genResult = await generateBatch(topic, examGuess, avoidList, batchSize);
+            (genResult.questions || []).forEach((q) => {
+              allQuestions.push(
+                normalizeQuestionMetadata(q, {
+                  source: "generated",
+                  topic,
+                  examType: examGuess,
+                  difficulty: "medium",
+                  subtopic: topic,
+                })
+              );
+            });
+          } catch (batchErr) {
+            console.error("Batch generation error:", batchErr);
+            if (allQuestions.length === 0) {
+              throw batchErr;
+            }
+            // If some questions were already generated or extracted, proceed with what we have
+            break;
+          }
           remaining -= batchSize;
+          batchIndex++;
         }
       }
       if (allQuestions.length === 0) {

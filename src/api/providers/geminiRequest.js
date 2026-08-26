@@ -175,23 +175,119 @@ export async function requestGeminiJson(system, content) {
     });
   }
 
-  const clean = result
+function sanitizeAndRepairJSONString(str) {
+  let result = "";
+  let inString = false;
+  let isEscaped = false;
+
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+
+    if (!inString) {
+      if (char === '"') {
+        inString = true;
+        isEscaped = false;
+        result += char;
+      } else {
+        result += char;
+      }
+    } else {
+      if (isEscaped) {
+        isEscaped = false;
+        if ('"\\/bfnrtu'.includes(char)) {
+          if (char === 'f' && str.slice(i + 1, i + 4) === 'rac') {
+            result += '\\f';
+          } else {
+            result += char;
+          }
+        } else {
+          result += '\\' + char;
+        }
+      } else if (char === '\\') {
+        const nextChar = str[i + 1];
+        if (nextChar === 'f' && str.slice(i + 2, i + 5) === 'rac') {
+          result += '\\\\';
+        } else if ('"\\/bfnrtu'.includes(nextChar)) {
+          isEscaped = true;
+          result += char;
+        } else {
+          result += '\\\\';
+        }
+      } else if (char === '"') {
+        let rest = str.slice(i + 1).trimStart();
+        const nextC = rest[0];
+        if (!nextC || nextC === ':' || nextC === ',' || nextC === ']' || nextC === '}') {
+          inString = false;
+          result += char;
+        } else {
+          result += '\\"';
+        }
+      } else if (char === '\n') {
+        result += '\\n';
+      } else if (char === '\r') {
+        result += '\\r';
+      } else if (char === '\t') {
+        result += '\\t';
+      } else {
+        result += char;
+      }
+    }
+  }
+
+  return result;
+}
+
+  let clean = result
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
     .replace(/\s*```$/i, "")
     .trim();
 
+  const firstBrace = clean.search(/[\{\[]/);
+  const lastBrace = Math.max(clean.lastIndexOf("}"), clean.lastIndexOf("]"));
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    clean = clean.slice(firstBrace, lastBrace + 1);
+function repairJSONSyntax(str) {
+  let s = str;
+
+  // 1. Remove trailing commas before ] or }
+  s = s.replace(/,\s*([\]\}])/g, "$1");
+
+  // 2. Insert missing commas between object properties:
+  s = s.replace(/([0-9]|true|false|null|"[^"\\]*(?:\\.[^"\\]*)*"|\]|\})\s*[\r\n]+\s*("[\w\-]+\s*":)/g, "$1,\n$2");
+
+  // 3. Insert missing commas between objects in an array: } \n { -> }, \n {
+  s = s.replace(/\}\s*[\r\n]+\s*\{/g, "},\n{");
+
+  return s;
+}
+
   try {
     return JSON.parse(clean);
   } catch (cause) {
-    console.error("Gemini response:", result);
-    throw new AIServiceError("Gemini returned invalid JSON.", {
-      code: AI_ERROR_CODES.INVALID_RESPONSE,
-      provider: "gemini",
-      status: response.status,
-      retriable: true,
-      userMessage: "AI returned an invalid response. Please try again.",
-      cause,
-    });
+    let repaired = repairJSONSyntax(clean);
+    try {
+      return JSON.parse(repaired);
+    } catch (e2) {}
+
+    repaired = sanitizeAndRepairJSONString(clean);
+    try {
+      return JSON.parse(repaired);
+    } catch (e3) {}
+
+    repaired = repairJSONSyntax(sanitizeAndRepairJSONString(clean));
+    try {
+      return JSON.parse(repaired);
+    } catch (e4) {
+      console.error("Gemini response:", result);
+      throw new AIServiceError("Gemini returned invalid JSON.", {
+        code: AI_ERROR_CODES.INVALID_RESPONSE,
+        provider: "gemini",
+        status: response.status,
+        retriable: true,
+        userMessage: "AI returned an invalid response. Please try again.",
+        cause,
+      });
+    }
   }
 }
