@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Upload, X, Clock, CheckCircle2, XCircle, ChevronLeft, ChevronRight,
   History as HistoryIcon, RotateCcw, AlertCircle, Loader2, Trophy,
-  FileText, Sparkles, ImageIcon, LogOut, Eye
+  FileText, Sparkles, ImageIcon, LogOut, Eye, Bookmark, BookmarkCheck,
+  BarChart3, Target, Zap, ChevronDown, Filter, Award, Timer, Hash,
+  GraduationCap, Train, Landmark, Building2, Shield, BookOpen
 } from "lucide-react";
 import {
   extractFromImage,
@@ -25,16 +27,34 @@ const fmtTime = (sec) => {
 
 const NUM_GEN_OPTIONS = [0, 5, 10, 15];
 const NEG_OPTIONS = [
-  { label: "No Negative Marking", value: 0 },
-  { label: "\u22120.25 / wrong", value: 0.25 },
-  { label: "\u22120.33 / wrong", value: 0.33 },
-  { label: "\u22120.5 / wrong", value: 0.5 },
+  { label: "No Negative", value: 0 },
+  { label: "\u22120.25", value: 0.25 },
+  { label: "\u22120.33", value: 0.33 },
+  { label: "\u22120.5", value: 0.5 },
 ];
 const TIMER_OPTIONS = [
   { key: "none", label: "No Timer" },
-  { key: "total", label: "Full-Test Timer" },
-  { key: "perQuestion", label: "60s / Question" },
+  { key: "total", label: "Full Test" },
+  { key: "perQuestion", label: "60s / Q" },
 ];
+
+const EXAM_ICONS = {
+  SSC: "🏛️",
+  Banking: "🏦",
+  Railways: "🚆",
+  UPSC: "📜",
+  "State PSC": "🗳️",
+  "General/Other": "📚",
+};
+
+const EXAM_SHORT_DESC = {
+  SSC: "CGL, CHSL, MTS & more",
+  Banking: "IBPS, SBI, RBI",
+  Railways: "NTPC, Group D, ALP",
+  UPSC: "CSE, CDS, NDA",
+  "State PSC": "UPPSC, BPSC, MPSC",
+  "General/Other": "Teaching, Police & GK",
+};
 
 function normalizeQuestionMetadata(question, context = {}) {
   const {
@@ -67,10 +87,6 @@ function getRepositoryPYQs(examGuess, topic) {
     verifiedOnly: true,
   });
 
-  // -----------------------------
-  // EXAM FILTER
-  // -----------------------------
-
   if (normalizedExam.includes("upsc")) {
     pyqs = pyqs.filter((pyq) =>
       String(pyq.exam || "").toLowerCase().includes("upsc")
@@ -90,10 +106,6 @@ function getRepositoryPYQs(examGuess, topic) {
       String(pyq.exam || "").toLowerCase().includes("bank")
     );
   }
-
-  // -----------------------------
-  // TOPIC / SUBJECT FILTER
-  // -----------------------------
 
   if (normalizedTopic) {
     pyqs = pyqs.filter((pyq) => {
@@ -120,29 +132,10 @@ function isStatePCSPYQ(pyq) {
   const exam = String(pyq.exam || "").toLowerCase();
 
   const statePCSKeywords = [
-    "bpsc",
-    "uppsc",
-    "mppsc",
-    "rpsc",
-    "jpsc",
-    "opsc",
-    "wbcs",
-    "wbpsc",
-    "hpsc",
-    "gpsc",
-    "cgpsc",
-    "jkpsc",
-    "kpsc",
-    "appsc",
-    "tspsc",
-    "tnpsc",
-    "ukpsc",
-    "hppsc",
-    "ppsc",
-    "mpsc",
-    "public service commission",
-    "provincial civil service",
-    "pcs",
+    "bpsc", "uppsc", "mppsc", "rpsc", "jpsc", "opsc", "wbcs", "wbpsc",
+    "hpsc", "gpsc", "cgpsc", "jkpsc", "kpsc", "appsc", "tspsc", "tnpsc",
+    "ukpsc", "hppsc", "ppsc", "mpsc", "public service commission",
+    "provincial civil service", "pcs",
   ];
 
   return statePCSKeywords.some((keyword) =>
@@ -177,6 +170,19 @@ function getTargetExamLevel(levelMeta) {
   }
 
   return "moderate";
+}
+
+function getDifficultyLabel(levelMeta) {
+  const target = getTargetExamLevel(levelMeta);
+  if (target === "basic") return "Easy";
+  if (target === "advanced") return "Hard";
+  return "Medium";
+}
+
+function getDifficultyColor(label) {
+  if (label === "Easy") return "var(--success)";
+  if (label === "Hard") return "var(--danger)";
+  return "var(--warning)";
 }
 
 function buildPerformance(answerResults) {
@@ -269,6 +275,10 @@ function toBase64(file) {
   });
 }
 
+/* ============================================
+   MAIN APP COMPONENT
+   ============================================ */
+
 export default function ExamForge() {
   const [screen, setScreen] = useState("setup");
   const [images, setImages] = useState([]);
@@ -297,6 +307,10 @@ export default function ExamForge() {
   const [reviewTest, setReviewTest] = useState(null);
   const [reviewOrigin, setReviewOrigin] = useState("results");
   const [prevScreen, setPrevScreen] = useState("setup");
+
+  // New state for enhanced features
+  const [markedForReview, setMarkedForReview] = useState(new Set());
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -355,8 +369,9 @@ export default function ExamForge() {
     let examGuesses = [];
     try {
       const levelMeta = getExamLevelMetadata(examType, subExam);
-const targetExamLevel = getTargetExamLevel(levelMeta);
-for (let i = 0; i < images.length; i++) {
+      const targetExamLevel = getTargetExamLevel(levelMeta);
+
+      for (let i = 0; i < images.length; i++) {
         setProcessingStatus(`Reading question paper image ${i + 1} of ${images.length}...`);
         const result = await extractFromImage(images[i]);
         if (result.topic) topics.push(result.topic);
@@ -365,18 +380,18 @@ for (let i = 0; i < images.length; i++) {
         const extractedExamType = result.examType || examType;
         (result.questions || []).forEach((q) => {
           allQuestions.push(
-                normalizeQuestionMetadata(q, {
-                  source: "extracted",
-                  topic: extractedTopic,
-                  examType: extractedExamType,
-                  difficulty: levelMeta,
-                  subtopic: extractedTopic,
-                })
+            normalizeQuestionMetadata(q, {
+              source: "extracted",
+              topic: extractedTopic,
+              examType: extractedExamType,
+              difficulty: levelMeta,
+              subtopic: extractedTopic,
+            })
           );
         });
       }
       const topic = topicText.trim() || topics[0] || "General Knowledge";
-      
+
       const fullExamName = subExam
         ? `${examType} — ${subExam} (Target Level: ${levelMeta})`
         : `${examType} (Target Level: ${levelMeta})`;
@@ -386,13 +401,13 @@ for (let i = 0; i < images.length; i++) {
 
       repositoryPYQs.forEach((pyq) => {
         allQuestions.push(
-            normalizeQuestionMetadata(pyq, {
-              source: "pyq",
-              topic: pyq.topic,
-              examType: examGuess,
-              difficulty: levelMeta,
-              subtopic: pyq.topic,
-            })
+          normalizeQuestionMetadata(pyq, {
+            source: "pyq",
+            topic: pyq.topic,
+            examType: examGuess,
+            difficulty: levelMeta,
+            subtopic: pyq.topic,
+          })
         );
       });
 
@@ -404,7 +419,6 @@ for (let i = 0; i < images.length; i++) {
         while (remaining > 0) {
           const batchSize = Math.min(10, remaining);
           if (batchIndex > 0) {
-            // Small pause to prevent rate limiting between requests
             await new Promise((res) => setTimeout(res, 1000));
           }
           setProcessingStatus(`Generating ${batchSize} new practice question${batchSize > 1 ? "s" : ""}...`);
@@ -432,7 +446,6 @@ for (let i = 0; i < images.length; i++) {
             if (allQuestions.length === 0) {
               throw batchErr;
             }
-            // If some questions were already generated or extracted, proceed with what we have
             break;
           }
           remaining -= batchSize;
@@ -451,6 +464,7 @@ for (let i = 0; i < images.length; i++) {
       setQuestionTracking({});
       setPerformance(buildPerformance({}));
       setCurrentIndex(0);
+      setMarkedForReview(new Set());
       if (timerMode === "total") setTimeLeft(Math.max(60, Math.round(allQuestions.length * 72)));
       else if (timerMode === "perQuestion") setTimeLeft(60);
       setTestStartedAt(Date.now());
@@ -512,12 +526,21 @@ for (let i = 0; i < images.length; i++) {
     });
   }
 
+  function toggleReview(qId) {
+    setMarkedForReview((prev) => {
+      const next = new Set(prev);
+      if (next.has(qId)) next.delete(qId);
+      else next.add(qId);
+      return next;
+    });
+  }
+
   function goNext() {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((i) => i + 1);
       if (timerMode === "perQuestion") setTimeLeft(60);
     } else {
-      submitTest();
+      setShowSubmitConfirm(true);
     }
   }
   function goPrev() {
@@ -553,6 +576,7 @@ for (let i = 0; i < images.length; i++) {
   }
 
   function submitTest() {
+    setShowSubmitConfirm(false);
     const total = questions.length;
     let correct = 0, wrong = 0, unattempted = 0;
     questions.forEach((q) => {
@@ -611,6 +635,8 @@ for (let i = 0; i < images.length; i++) {
     setCurrentIndex(0);
     setTestResult(null);
     setError("");
+    setMarkedForReview(new Set());
+    setShowSubmitConfirm(false);
   }
 
   function exitQuiz() {
@@ -623,27 +649,25 @@ for (let i = 0; i < images.length; i++) {
   const answeredCount = Object.keys(answers).length;
 
   return (
-    <div className="ef-root" style={ROOT_VARS}>
-      <style>{CSS}</style>
-
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        {/* Nav */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => screen !== "quiz" && resetToSetup()}>
-            <div className="ef-logo-box ef-serif">EF</div>
+    <div className="ef-root">
+      <div className="ef-container">
+        {/* Navbar */}
+        <div className="ef-navbar">
+          <div className="ef-logo" onClick={() => screen !== "quiz" && resetToSetup()}>
+            <div className="ef-logo-icon">EF</div>
             <div>
-              <div className="ef-serif font-bold text-lg leading-none" style={{ color: "var(--ink)" }}>ExamForge</div>
-              <div className="text-[11px] ef-mono tracking-wide" style={{ color: "var(--pencil)" }}>MOCK TEST GENERATOR</div>
+              <div className="ef-logo-text">ExamForge</div>
+              <div className="ef-logo-sub">Mock Test Generator</div>
             </div>
           </div>
           {screen === "quiz" ? (
-            <button onClick={exitQuiz} className="ef-btn-secondary px-3 py-1.5 rounded text-sm flex items-center gap-1.5">
+            <button onClick={exitQuiz} className="ef-btn ef-btn-secondary" style={{ padding: "8px 16px" }}>
               <LogOut size={14} /> Exit
             </button>
           ) : (
             <button
               onClick={() => { setPrevScreen(screen === "history" ? prevScreen : screen); setScreen("history"); loadHistoryList(); }}
-              className="ef-btn-secondary px-3 py-1.5 rounded text-sm flex items-center gap-1.5"
+              className="ef-btn ef-btn-secondary" style={{ padding: "8px 16px" }}
             >
               <HistoryIcon size={14} /> History
             </button>
@@ -670,8 +694,11 @@ for (let i = 0; i < images.length; i++) {
           <QuizScreen
             questions={questions} currentQ={currentQ} currentIndex={currentIndex}
             answers={answers} selectAnswer={selectAnswer} goNext={goNext} goPrev={goPrev}
-            jumpTo={jumpTo} timerMode={timerMode} timeLeft={timeLeft} submitTest={submitTest}
+            jumpTo={jumpTo} timerMode={timerMode} timeLeft={timeLeft}
+            submitTest={() => setShowSubmitConfirm(true)}
             answeredCount={answeredCount}
+            markedForReview={markedForReview} toggleReview={toggleReview}
+            examType={examType} subExam={subExam}
           />
         )}
 
@@ -701,11 +728,49 @@ for (let i = 0; i < images.length; i++) {
           />
         )}
       </div>
+
+      {/* Submit Confirmation Modal */}
+      {showSubmitConfirm && (
+        <div className="ef-overlay" onClick={() => setShowSubmitConfirm(false)}>
+          <div className="ef-modal" onClick={(e) => e.stopPropagation()}>
+            <div style={{ textAlign: "center" }}>
+              <AlertCircle size={40} style={{ color: "var(--warning)", margin: "0 auto 12px" }} />
+              <h3 className="ef-subheading" style={{ fontSize: 18, marginBottom: 8 }}>Submit Test?</h3>
+              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 4 }}>
+                {answeredCount} of {questions.length} questions answered
+              </p>
+              {questions.length - answeredCount > 0 && (
+                <p style={{ color: "var(--warning)", fontSize: 13, fontWeight: 600 }}>
+                  {questions.length - answeredCount} question{questions.length - answeredCount > 1 ? "s" : ""} unanswered
+                </p>
+              )}
+              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                <button
+                  onClick={() => setShowSubmitConfirm(false)}
+                  className="ef-btn ef-btn-secondary"
+                  style={{ flex: 1, padding: "10px 16px" }}
+                >
+                  Continue Test
+                </button>
+                <button
+                  onClick={submitTest}
+                  className="ef-btn ef-btn-primary"
+                  style={{ flex: 1, padding: "10px 16px" }}
+                >
+                  <CheckCircle2 size={16} /> Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-/* ---------- Screens ---------- */
+/* ============================================
+   SETUP SCREEN
+   ============================================ */
 
 function SetupScreen(props) {
   const {
@@ -717,335 +782,492 @@ function SetupScreen(props) {
   const canStart = images.length > 0 || topicText.trim().length > 0;
   const categories = getExams();
   const availableSubExams = examType ? getSubExams(examType) : [];
+  const levelMeta = getExamLevelMetadata(examType, subExam);
+  const diffLabel = getDifficultyLabel(levelMeta);
 
   return (
     <div className="ef-anim">
-      <div className="mb-7">
-        <div className="ef-serif font-extrabold text-3xl sm:text-4xl leading-tight" style={{ color: "var(--ink)" }}>
-          Turn any question paper<br />into a live mock test.
-        </div>
-        <p className="mt-2 text-sm" style={{ color: "var(--pencil)" }}>
-          Upload photos of MCQs from Banking, UPSC, SSC or Railways papers &mdash; ExamForge reads them,
-          adds fresh practice questions on the same topic, and runs a timed, negatively-marked test.
+      {/* Hero */}
+      <div style={{ marginBottom: 28 }}>
+        <h1 className="ef-heading" style={{ fontSize: "clamp(24px, 5vw, 36px)", color: "var(--text-primary)", marginBottom: 8 }}>
+          Generate Mock Tests<br />
+          <span style={{ color: "var(--primary)" }}>for Any Exam</span>
+        </h1>
+        <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.6, maxWidth: 480 }}>
+          Upload question papers or pick a topic — ExamForge creates timed, negatively-marked tests
+          matching your exam's difficulty level.
         </p>
       </div>
 
-      <div className="ef-card p-5 sm:p-6 mb-5">
-        <div className="ef-corner tl" /><div className="ef-corner tr" /><div className="ef-corner bl" /><div className="ef-corner br" />
+      {/* Step 1 — Choose Exam */}
+      <div className="ef-card" style={{ padding: "20px 20px 24px", marginBottom: 16 }}>
+        <div className="ef-section-label" style={{ marginBottom: 14 }}>
+          <Target size={14} /> Step 1 — Choose Your Exam
+        </div>
 
-        <SectionLabel icon={<ImageIcon size={14} />} text="1. Upload question paper images (up to 5)" />
+        <div className="ef-exam-grid">
+          {categories.map((cat) => (
+            <div
+              key={cat}
+              className={`ef-exam-card ${examType === cat ? "ef-exam-card-active" : ""}`}
+              onClick={() => { setExamType(cat); setSubExam(""); }}
+            >
+              <div className="ef-exam-card-icon">{EXAM_ICONS[cat] || "📝"}</div>
+              <div className="ef-exam-card-name">{cat}</div>
+              <div className="ef-exam-card-desc">{EXAM_SHORT_DESC[cat] || ""}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Sub-exam select */}
+        {examType && availableSubExams.length > 0 && (
+          <div className="ef-anim" style={{ marginTop: 14 }}>
+            <div className="ef-label" style={{ marginBottom: 6 }}>Sub Exam</div>
+            <select
+              value={subExam}
+              onChange={(e) => setSubExam(e.target.value)}
+              className="ef-select"
+            >
+              <option value="">All / General {examType}</option>
+              {availableSubExams.map((sub) => (
+                <option key={sub.id} value={sub.name}>
+                  {sub.name} — {sub.fullName}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Difficulty badge */}
+        <div className="ef-anim" style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span className="ef-badge" style={{
+            background: `${getDifficultyColor(diffLabel)}15`,
+            color: getDifficultyColor(diffLabel),
+          }}>
+            <Zap size={10} /> Difficulty: {diffLabel}
+          </span>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{levelMeta}</span>
+        </div>
+      </div>
+
+      {/* Step 2 — Topic & Source */}
+      <div className="ef-card" style={{ padding: "20px", marginBottom: 16 }}>
+        <div className="ef-section-label" style={{ marginBottom: 14 }}>
+          <BookOpen size={14} /> Step 2 — Topic & Question Source
+        </div>
+
+        {/* Topic input */}
+        <div style={{ marginBottom: 16 }}>
+          <div className="ef-label" style={{ marginBottom: 6 }}>Topic / Subject</div>
+          <input
+            type="text" value={topicText} onChange={(e) => setTopicText(e.target.value)}
+            placeholder="e.g. Indian Polity — Fundamental Rights, Banking Awareness — RBI"
+            className="ef-input"
+          />
+        </div>
+
+        {/* Image upload */}
+        <div className="ef-label" style={{ marginBottom: 6 }}>Upload Question Paper (Optional)</div>
         <div
-          className={`ef-dashed rounded-lg p-5 text-center cursor-pointer mt-2 ${dragActive ? "ef-dashed-active" : ""}`}
+          className={`ef-dropzone ${dragActive ? "ef-dropzone-active" : ""}`}
           onClick={() => fileInputRef.current && fileInputRef.current.click()}
           onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
           onDragLeave={() => setDragActive(false)}
           onDrop={(e) => { e.preventDefault(); setDragActive(false); handleFiles(e.dataTransfer.files); }}
         >
-          <Upload size={22} style={{ color: "var(--ink)", margin: "0 auto" }} />
-          <div className="text-sm mt-2" style={{ color: "var(--graphite)" }}>Drop images here, or tap to choose</div>
-          <div className="text-xs mt-1" style={{ color: "var(--pencil)" }}>JPG or PNG &middot; {images.length}/5 uploaded</div>
-          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+          <Upload size={22} style={{ color: "var(--primary)", margin: "0 auto 8px" }} />
+          <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Drop images here, or click to upload</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>JPG or PNG · {images.length}/5 uploaded</div>
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="ef-hidden" onChange={(e) => handleFiles(e.target.files)} />
         </div>
 
         {images.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
             {images.map((img) => (
-              <div key={img.id} className="relative">
-                <img src={img.preview} alt={img.name} className="w-16 h-16 object-cover rounded" style={{ border: "1.5px solid var(--ink)" }} />
+              <div key={img.id} style={{ position: "relative" }}>
+                <img
+                  src={img.preview} alt={img.name}
+                  style={{ width: 56, height: 56, objectFit: "cover", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}
+                />
                 <button
                   onClick={(e) => { e.stopPropagation(); removeImage(img.id); }}
-                  className="absolute -top-2 -right-2 rounded-full flex items-center justify-center"
-                  style={{ width: 20, height: 20, background: "var(--stamp)", color: "var(--paper)" }}
+                  style={{
+                    position: "absolute", top: -6, right: -6, width: 20, height: 20,
+                    borderRadius: "50%", background: "var(--danger)", color: "white",
+                    border: "none", display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", fontSize: 0
+                  }}
                 >
-                  <X size={12} />
+                  <X size={11} />
                 </button>
               </div>
             ))}
           </div>
         )}
-
-        <div className="mt-5">
-          <SectionLabel icon={<Sparkles size={14} />} text="2. Or, type a topic to generate questions on" />
-          <input
-            type="text" value={topicText} onChange={(e) => setTopicText(e.target.value)}
-            placeholder="e.g. Indian Polity \u2014 Fundamental Rights, or Banking Awareness \u2014 RBI Functions"
-            className="w-full mt-2 px-3 py-2 rounded text-sm outline-none ef-input"
-          />
-        </div>
       </div>
 
-      <div className="ef-card p-5 sm:p-6 mb-5">
-        <div className="ef-corner tl" /><div className="ef-corner tr" /><div className="ef-corner bl" /><div className="ef-corner br" />
+      {/* Step 3 — Test Configuration */}
+      <div className="ef-card" style={{ padding: "20px", marginBottom: 16 }}>
+        <div className="ef-section-label" style={{ marginBottom: 14 }}>
+          <BarChart3 size={14} /> Step 3 — Test Configuration
+        </div>
 
-        <SectionLabel icon={<FileText size={14} />} text="3. Exam Category & Sub Exam" />
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-          <div>
-            <label className="text-[11px] ef-mono uppercase tracking-wide block mb-1" style={{ color: "var(--pencil)" }}>
-              Exam Category
-            </label>
-            <select
-              value={examType}
-              onChange={(e) => {
-                const newCat = e.target.value;
-                setExamType(newCat);
-                setSubExam("");
-              }}
-              className="w-full px-3 py-2 rounded text-sm outline-none ef-input cursor-pointer"
-            >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+        {/* Questions count */}
+        <div style={{ marginBottom: 16 }}>
+          <div className="ef-label" style={{ marginBottom: 8 }}>Questions to Generate</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {NUM_GEN_OPTIONS.map((n) => {
+              const label = n === 0 ? "None" : `+${n}`;
+              return (
+                <button
+                  key={n}
+                  onClick={() => setNumGenerate(n)}
+                  className={`ef-chip ${numGenerate === n ? "ef-chip-active" : ""}`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
+        </div>
 
-          {examType && availableSubExams.length > 0 && (
-            <div className="ef-anim">
-              <label className="text-[11px] ef-mono uppercase tracking-wide block mb-1" style={{ color: "var(--pencil)" }}>
-                Sub Exam
-              </label>
-              <select
-                value={subExam}
-                onChange={(e) => setSubExam(e.target.value)}
-                className="w-full px-3 py-2 rounded text-sm outline-none ef-input cursor-pointer"
+        {/* Negative marking */}
+        <div style={{ marginBottom: 16 }}>
+          <div className="ef-label" style={{ marginBottom: 8 }}>Negative Marking</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {NEG_OPTIONS.map((o) => (
+              <button
+                key={o.value}
+                onClick={() => setNegativeMarking(o.value)}
+                className={`ef-chip ${negativeMarking === o.value ? "ef-chip-active" : ""}`}
               >
-                <option value="">All / General {examType}</option>
-                {availableSubExams.map((sub) => (
-                  <option key={sub.id} value={sub.name}>
-                    {sub.name} — {sub.fullName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-
-        {subExam && (
-          <div className="mt-2 text-xs flex items-center gap-1.5 ef-anim" style={{ color: "var(--pencil)" }}>
-            <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "var(--ink)" }}></span>
-            Target Level: <span className="font-semibold" style={{ color: "var(--ink)" }}>{getExamLevelMetadata(examType, subExam)}</span>
+                {o.label}
+              </button>
+            ))}
           </div>
-        )}
-
-        <div className="mt-5">
-          <SectionLabel icon={<Sparkles size={14} />} text="4. New practice questions to generate" />
-          <ChipRow
-            options={NUM_GEN_OPTIONS.map((n) => (n === 0 ? "None (extract only)" : `+${n} new`))}
-            value={numGenerate === 0 ? "None (extract only)" : `+${numGenerate} new`}
-            onChange={(label) => setNumGenerate(label.startsWith("None") ? 0 : parseInt(label.replace(/\D/g, ""), 10))}
-          />
         </div>
 
-        <div className="mt-5">
-          <SectionLabel icon={<XCircle size={14} />} text="5. Negative marking" />
-          <ChipRow
-            options={NEG_OPTIONS.map((o) => o.label)}
-            value={NEG_OPTIONS.find((o) => o.value === negativeMarking)?.label}
-            onChange={(label) => setNegativeMarking(NEG_OPTIONS.find((o) => o.label === label).value)}
-          />
-        </div>
-
-        <div className="mt-5">
-          <SectionLabel icon={<Clock size={14} />} text="6. Timer" />
-          <ChipRow
-            options={TIMER_OPTIONS.map((o) => o.label)}
-            value={TIMER_OPTIONS.find((o) => o.key === timerMode)?.label}
-            onChange={(label) => setTimerMode(TIMER_OPTIONS.find((o) => o.label === label).key)}
-          />
+        {/* Timer */}
+        <div>
+          <div className="ef-label" style={{ marginBottom: 8 }}>Timer</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {TIMER_OPTIONS.map((o) => (
+              <button
+                key={o.key}
+                onClick={() => setTimerMode(o.key)}
+                className={`ef-chip ${timerMode === o.key ? "ef-chip-active" : ""}`}
+              >
+                <Clock size={12} /> {o.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
+      {/* Error */}
       {error && (
-        <div className="flex items-start gap-2 p-3 rounded mb-4 text-sm" style={{ background: "rgba(178,58,46,0.1)", color: "var(--stamp)" }}>
-          <AlertCircle size={16} className="shrink-0 mt-0.5" /> {error}
+        <div style={{
+          display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px",
+          borderRadius: "var(--radius-sm)", marginBottom: 16,
+          background: "var(--danger-light)", color: "var(--danger)", fontSize: 13
+        }}>
+          <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} /> {error}
         </div>
       )}
 
+      {/* Generate Button */}
       <button
         disabled={!canStart}
         onClick={runGeneration}
-        className="ef-btn-primary w-full py-3.5 rounded-lg font-semibold ef-serif text-base flex items-center justify-center gap-2"
+        className="ef-btn ef-btn-primary"
+        style={{ width: "100%", padding: "14px 20px", borderRadius: "var(--radius-md)", fontSize: 16, fontWeight: 700 }}
       >
-        <Sparkles size={18} /> Generate Test
+        <Sparkles size={18} /> Generate Mock Test
       </button>
-      {!canStart && <div className="text-xs text-center mt-2" style={{ color: "var(--pencil)" }}>Upload an image or type a topic to continue</div>}
-      <div className="text-[10px] text-center mt-4 ef-mono" style={{ color: "var(--pencil)" }}>
-        Local development mode · Never expose your Claude API key in a public frontend deployment.
+      {!canStart && (
+        <div style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>
+          Upload an image or type a topic to get started
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================
+   PROCESSING SCREEN
+   ============================================ */
+
+function ProcessingScreen({ status }) {
+  return (
+    <div className="ef-anim" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 400, textAlign: "center" }}>
+      <div className="ef-card" style={{ padding: "48px 32px", width: "100%", maxWidth: 420 }}>
+        {/* Animated dots */}
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 24 }}>
+          <div className="ef-processing-dot" />
+          <div className="ef-processing-dot" />
+          <div className="ef-processing-dot" />
+        </div>
+        <h2 className="ef-subheading" style={{ fontSize: 20, marginBottom: 8, color: "var(--text-primary)" }}>Building Your Test</h2>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>{status || "Preparing questions..."}</p>
       </div>
     </div>
   );
 }
 
-function SectionLabel({ icon, text }) {
-  return (
-    <div className="flex items-center gap-1.5 ef-mono text-xs tracking-wide uppercase" style={{ color: "var(--ink)" }}>
-      {icon} {text}
-    </div>
-  );
-}
+/* ============================================
+   QUIZ SCREEN
+   ============================================ */
 
-function ChipRow({ options, value, onChange }) {
-  return (
-    <div className="flex flex-wrap gap-2 mt-2">
-      {options.map((opt) => (
-        <button
-          key={opt}
-          onClick={() => onChange(opt)}
-          className={`ef-chip px-3 py-1.5 rounded-full text-xs sm:text-sm ${value === opt ? "ef-chip-active" : ""}`}
-        >
-          {opt}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function ProcessingScreen({ status }) {
-  return (
-    <div className="ef-anim ef-card p-10 flex flex-col items-center text-center" style={{ minHeight: 320, justifyContent: "center" }}>
-      <div className="ef-corner tl" /><div className="ef-corner tr" /><div className="ef-corner bl" /><div className="ef-corner br" />
-      <Loader2 size={32} className="animate-spin" style={{ color: "var(--stamp)" }} />
-      <div className="ef-serif font-bold text-xl mt-5" style={{ color: "var(--ink)" }}>Building your test</div>
-      <div className="text-sm mt-2 ef-mono" style={{ color: "var(--pencil)" }}>{status}</div>
-    </div>
-  );
-}
-
-function QuizScreen({ questions, currentQ, currentIndex, answers, selectAnswer, goNext, goPrev, jumpTo, timerMode, timeLeft, submitTest, answeredCount }) {
+function QuizScreen({ questions, currentQ, currentIndex, answers, selectAnswer, goNext, goPrev, jumpTo, timerMode, timeLeft, submitTest, answeredCount, markedForReview, toggleReview, examType, subExam }) {
   const isLast = currentIndex === questions.length - 1;
   const selected = answers[currentQ.id];
+  const isReviewed = markedForReview.has(currentQ.id);
+  const progressPct = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
 
   return (
     <div className="ef-anim">
-      <div className="flex items-center justify-between mb-4">
-        <div className="ef-mono text-sm" style={{ color: "var(--ink)" }}>
-          Question {currentIndex + 1} <span style={{ color: "var(--pencil)" }}>of {questions.length}</span>
+      {/* Progress bar */}
+      <div className="ef-progress-bar" style={{ marginBottom: 16 }}>
+        <div className="ef-progress-fill" style={{ width: `${progressPct}%` }} />
+      </div>
+
+      {/* Top bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="ef-badge ef-badge-primary">
+            Q {currentIndex + 1}/{questions.length}
+          </span>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+            {answeredCount} answered
+          </span>
         </div>
         {timerMode !== "none" && (
-          <div className="flex items-center gap-1.5 ef-mono font-semibold px-3 py-1 rounded" style={{ background: timeLeft <= 10 ? "var(--stamp)" : "var(--ink)", color: "var(--paper)" }}>
+          <div className={`ef-timer ${timeLeft <= 10 ? "ef-timer-danger" : ""}`}>
             <Clock size={14} /> {fmtTime(timeLeft)}
           </div>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-1.5 mb-5">
-        {questions.map((q, i) => (
-          <div
-            key={q.id}
-            onClick={() => jumpTo(i)}
-            className={`ef-dot ${answers[q.id] !== undefined ? "ef-dot-answered" : ""} ${i === currentIndex ? "ef-dot-current" : ""}`}
-            title={`Question ${i + 1}`}
-          />
-        ))}
+      {/* Question palette */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 16 }}>
+        {questions.map((q, i) => {
+          let cls = "ef-qdot";
+          if (i === currentIndex) cls += " ef-qdot-current";
+          if (answers[q.id] !== undefined) cls += " ef-qdot-answered";
+          if (markedForReview.has(q.id)) cls += " ef-qdot-review";
+          return (
+            <div key={q.id} onClick={() => jumpTo(i)} className={cls} title={`Q${i + 1}`}>
+              {i + 1}
+            </div>
+          );
+        })}
       </div>
 
-      <div className="ef-card p-5 sm:p-6">
-        <div className="ef-corner tl" /><div className="ef-corner tr" /><div className="ef-corner bl" /><div className="ef-corner br" />
-
-        {(currentQ.source?.type === "pyq" || currentQ.source === "pyq") ? (
-          <div
-            className="inline-flex flex-wrap items-center gap-1 ef-mono text-[10px] uppercase tracking-wide px-2 py-0.5 rounded mb-3"
-            style={{
-              background: "rgba(36,72,110,0.10)",
-              color: "var(--ink)",
-            }}
-          >
-            <span>🏛️ Actual PYQ</span>
-            {currentQ.exam && <span>· {currentQ.exam}</span>}
-            {currentQ.year && <span>· {currentQ.year}</span>}
-            {currentQ.paper && <span>· {currentQ.paper}</span>}
-            {currentQ.subject && <span>· {currentQ.subject}</span>}
-          </div>
-        ) : currentQ.source === "adaptive" ? (
-          <div
-            className="inline-flex items-center gap-1 ef-mono text-[10px] uppercase tracking-wide px-2 py-0.5 rounded mb-3"
-            style={{
-              background: "rgba(47,110,79,0.12)",
-              color: "var(--ledger)",
-            }}
-          >
-            <Sparkles size={10} /> Adaptive practice question
-          </div>
-        ) : currentQ.source === "generated" ? (
-          <div
-            className="inline-flex items-center gap-1 ef-mono text-[10px] uppercase tracking-wide px-2 py-0.5 rounded mb-3"
-            style={{
-              background: "rgba(47,110,79,0.12)",
-              color: "var(--ledger)",
-            }}
-          >
-            <Sparkles size={10} /> New practice question
-          </div>
-        ) : null}
-
-        <div className="ef-serif font-semibold text-lg leading-snug mb-5" style={{ color: "var(--graphite)" }}>
-          {currentQ.question}
+      {/* Question card */}
+      <div className="ef-card" style={{ padding: "20px 24px" }}>
+        {/* Source & difficulty badges */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+          {(currentQ.source?.type === "pyq" || currentQ.source === "pyq") ? (
+            <span className="ef-badge ef-badge-primary">
+              🏛️ PYQ {currentQ.exam && `· ${currentQ.exam}`} {currentQ.year && `· ${currentQ.year}`}
+            </span>
+          ) : currentQ.source === "generated" ? (
+            <span className="ef-badge ef-badge-success">
+              <Sparkles size={10} /> AI Generated
+            </span>
+          ) : currentQ.source === "extracted" ? (
+            <span className="ef-badge" style={{ background: "#FEF3C7", color: "#92400E" }}>
+              <ImageIcon size={10} /> Extracted
+            </span>
+          ) : null}
+          {isReviewed && (
+            <span className="ef-badge ef-badge-warning">
+              <Bookmark size={10} /> Marked for Review
+            </span>
+          )}
         </div>
 
-        <div className="flex flex-col gap-3">
+        {/* Question text */}
+        <h3 className="ef-subheading" style={{ fontSize: 16, lineHeight: 1.55, marginBottom: 20, color: "var(--text-primary)", whiteSpace: "pre-line" }}>
+          {currentQ.question}
+        </h3>
+
+        {/* Options */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {currentQ.options.map((opt, idx) => (
-            <div key={idx} onClick={() => selectAnswer(currentQ.id, idx)} className="flex items-center gap-3 cursor-pointer">
-              <div className={`ef-bubble ${selected === idx ? "ef-bubble-selected" : ""}`}>{String.fromCharCode(65 + idx)}</div>
-              <div className="text-sm sm:text-base" style={{ color: "var(--graphite)" }}>{opt}</div>
+            <div
+              key={idx}
+              onClick={() => selectAnswer(currentQ.id, idx)}
+              className={`ef-option ${selected === idx ? "ef-option-selected" : ""}`}
+            >
+              <div className="ef-option-letter">{String.fromCharCode(65 + idx)}</div>
+              <div className="ef-option-text">{opt}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="flex items-center justify-between mt-5 gap-3">
-        <button onClick={goPrev} disabled={currentIndex === 0} className="ef-btn-secondary px-4 py-2.5 rounded flex items-center gap-1 text-sm disabled:opacity-30">
-          <ChevronLeft size={16} /> Previous
+      {/* Bottom actions */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, gap: 8 }}>
+        <button onClick={goPrev} disabled={currentIndex === 0} className="ef-btn ef-btn-secondary" style={{ padding: "10px 16px" }}>
+          <ChevronLeft size={16} /> Prev
         </button>
-        <div className="text-xs ef-mono" style={{ color: "var(--pencil)" }}>{answeredCount}/{questions.length} answered</div>
+
+        <button
+          onClick={() => toggleReview(currentQ.id)}
+          className={`ef-btn ${isReviewed ? "ef-btn-secondary" : "ef-btn-ghost"}`}
+          style={{ padding: "10px 14px" }}
+          title={isReviewed ? "Remove from review" : "Mark for review"}
+        >
+          {isReviewed ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+        </button>
+
         {isLast ? (
-          <button onClick={submitTest} className="ef-btn-primary px-5 py-2.5 rounded font-semibold text-sm flex items-center gap-1.5">
-            Submit Test <CheckCircle2 size={16} />
+          <button onClick={submitTest} className="ef-btn ef-btn-primary" style={{ padding: "10px 20px" }}>
+            Submit <CheckCircle2 size={16} />
           </button>
         ) : (
-          <button onClick={goNext} className="ef-btn-primary px-5 py-2.5 rounded font-semibold text-sm flex items-center gap-1.5">
+          <button onClick={goNext} className="ef-btn ef-btn-primary" style={{ padding: "10px 20px" }}>
             Next <ChevronRight size={16} />
           </button>
         )}
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 16, justifyContent: "center" }}>
+        {[
+          { cls: "ef-qdot", label: "Not visited" },
+          { cls: "ef-qdot ef-qdot-answered", label: "Answered" },
+          { cls: "ef-qdot ef-qdot-review", label: "Review" },
+          { cls: "ef-qdot ef-qdot-current", label: "Current" },
+        ].map(({ cls, label }) => (
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--text-muted)" }}>
+            <div className={cls} style={{ width: 16, height: 16, fontSize: 0, cursor: "default" }} />
+            {label}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
+/* ============================================
+   RESULTS SCREEN
+   ============================================ */
+
 function ResultsScreen({ result, onReview, onNewTest, onHistory }) {
   const accuracy = result.total - result.unattempted > 0 ? Math.round((result.correct / (result.total - result.unattempted)) * 100) : 0;
+  const scorePct = result.maxScore > 0 ? Math.max(0, Math.round((result.score / result.maxScore) * 100)) : 0;
+  const circumference = 2 * Math.PI * 65;
+  const strokeOffset = circumference - (circumference * scorePct) / 100;
+  const ringColor = scorePct >= 70 ? "var(--success)" : scorePct >= 40 ? "var(--warning)" : "var(--danger)";
+
   return (
     <div className="ef-anim">
-      <div className="ef-card p-6 sm:p-8 text-center mb-5">
-        <div className="ef-corner tl" /><div className="ef-corner tr" /><div className="ef-corner bl" /><div className="ef-corner br" />
-        <Trophy size={30} style={{ color: "var(--stamp)", margin: "0 auto" }} />
-        <div className="ef-mono text-xs uppercase tracking-widest mt-3" style={{ color: "var(--pencil)" }}>Scorecard</div>
-        <div className="ef-serif font-extrabold mt-1" style={{ color: "var(--ink)", fontSize: 48, lineHeight: 1 }}>
-          {result.score}<span style={{ fontSize: 22, color: "var(--pencil)" }}> / {result.maxScore}</span>
+      {/* Score card */}
+      <div className="ef-card" style={{ padding: "32px 24px", textAlign: "center", marginBottom: 16 }}>
+        <Award size={28} style={{ color: "var(--primary)", margin: "0 auto 8px" }} />
+        <div className="ef-label" style={{ marginBottom: 16 }}>Test Complete</div>
+
+        {/* Score ring */}
+        <div className="ef-score-ring">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <circle className="ef-score-ring-bg" cx="80" cy="80" r="65" />
+            <circle
+              className="ef-score-ring-fill"
+              cx="80" cy="80" r="65"
+              stroke={ringColor}
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeOffset}
+            />
+          </svg>
+          <div className="ef-score-ring-text">
+            <div className="ef-heading" style={{ fontSize: 36, color: ringColor }}>{result.score}</div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>of {result.maxScore}</div>
+          </div>
         </div>
-        <div className="text-sm mt-1" style={{ color: "var(--pencil)" }}>{result.examType} &middot; {result.topic}</div>
+
+        <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 12 }}>
+          {result.examType} · {result.topic}
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        <StatBox label="Correct" value={result.correct} color="var(--ledger)" />
-        <StatBox label="Wrong" value={result.wrong} color="var(--stamp)" />
-        <StatBox label="Skipped" value={result.unattempted} color="var(--pencil)" />
-      </div>
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        <StatBox label="Accuracy" value={`${accuracy}%`} color="var(--ink)" />
-        <StatBox label="Time Taken" value={fmtTime(result.timeTakenSec)} color="var(--ink)" />
+      {/* Stats grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
+        <div className="ef-card ef-stat">
+          <div className="ef-stat-value" style={{ color: "var(--success)" }}>{result.correct}</div>
+          <div className="ef-stat-label">Correct</div>
+        </div>
+        <div className="ef-card ef-stat">
+          <div className="ef-stat-value" style={{ color: "var(--danger)" }}>{result.wrong}</div>
+          <div className="ef-stat-label">Wrong</div>
+        </div>
+        <div className="ef-card ef-stat">
+          <div className="ef-stat-value" style={{ color: "var(--text-muted)" }}>{result.unattempted}</div>
+          <div className="ef-stat-label">Skipped</div>
+        </div>
+        <div className="ef-card ef-stat">
+          <div className="ef-stat-value" style={{ color: "var(--primary)" }}>{accuracy}%</div>
+          <div className="ef-stat-label">Accuracy</div>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <button onClick={onReview} className="ef-btn-primary w-full py-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2">
-          <Eye size={16} /> Review Answers
+      {/* Time & Details */}
+      <div className="ef-card" style={{ padding: "16px 20px", marginBottom: 16, display: "flex", justifyContent: "space-around", flexWrap: "wrap", gap: 12 }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Time Taken</div>
+          <div className="ef-subheading" style={{ fontSize: 18, color: "var(--text-primary)", marginTop: 2 }}>{fmtTime(result.timeTakenSec)}</div>
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Avg / Question</div>
+          <div className="ef-subheading" style={{ fontSize: 18, color: "var(--text-primary)", marginTop: 2 }}>
+            {result.total > 0 ? fmtTime(Math.round(result.timeTakenSec / result.total)) : "—"}
+          </div>
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Neg. Marks</div>
+          <div className="ef-subheading" style={{ fontSize: 18, color: "var(--danger)", marginTop: 2 }}>
+            {result.negativeMarking > 0 ? `-${(result.wrong * result.negativeMarking).toFixed(2)}` : "0"}
+          </div>
+        </div>
+      </div>
+
+      {/* Topic-wise breakdown */}
+      {result.performance && Object.keys(result.performance.topicWise || {}).length > 0 && (
+        <div className="ef-card" style={{ padding: "16px 20px", marginBottom: 16 }}>
+          <div className="ef-section-label" style={{ marginBottom: 12 }}>
+            <BarChart3 size={14} /> Topic-wise Performance
+          </div>
+          {Object.entries(result.performance.topicWise).map(([topic, stats]) => {
+            const pct = stats.attempted > 0 ? Math.round((stats.correct / stats.attempted) * 100) : 0;
+            return (
+              <div key={topic} style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+                  <span style={{ color: "var(--text-secondary)", fontWeight: 500 }}>{topic}</span>
+                  <span style={{ color: pct >= 60 ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>{stats.correct}/{stats.attempted}</span>
+                </div>
+                <div className="ef-progress-bar" style={{ height: 6 }}>
+                  <div className="ef-progress-fill" style={{
+                    width: `${pct}%`,
+                    background: pct >= 60 ? "var(--success)" : "var(--danger)"
+                  }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <button onClick={onReview} className="ef-btn ef-btn-primary" style={{ width: "100%", padding: "12px 20px", borderRadius: "var(--radius-md)" }}>
+          <Eye size={16} /> Review All Answers
         </button>
-        <div className="flex gap-3">
-          <button onClick={onNewTest} className="ef-btn-secondary flex-1 py-2.5 rounded text-sm flex items-center justify-center gap-1.5">
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={onNewTest} className="ef-btn ef-btn-secondary" style={{ flex: 1, padding: "10px 16px", borderRadius: "var(--radius-sm)" }}>
             <RotateCcw size={14} /> New Test
           </button>
-          <button onClick={onHistory} className="ef-btn-secondary flex-1 py-2.5 rounded text-sm flex items-center justify-center gap-1.5">
+          <button onClick={onHistory} className="ef-btn ef-btn-secondary" style={{ flex: 1, padding: "10px 16px", borderRadius: "var(--radius-sm)" }}>
             <HistoryIcon size={14} /> History
           </button>
         </div>
@@ -1054,178 +1276,195 @@ function ResultsScreen({ result, onReview, onNewTest, onHistory }) {
   );
 }
 
-function StatBox({ label, value, color }) {
-  return (
-    <div className="ef-card p-3 text-center">
-      <div className="ef-serif font-bold text-xl" style={{ color }}>{value}</div>
-      <div className="ef-mono text-[10px] uppercase tracking-wide mt-0.5" style={{ color: "var(--pencil)" }}>{label}</div>
-    </div>
-  );
-}
+/* ============================================
+   REVIEW SCREEN
+   ============================================ */
 
 function ReviewScreen({ test, onBack }) {
-  return (
-    <div className="ef-anim">
-      <button onClick={onBack} className="ef-btn-secondary px-3 py-1.5 rounded text-sm flex items-center gap-1.5 mb-5">
-        <ChevronLeft size={14} /> Back
-      </button>
-      <div className="flex flex-col gap-4">
-        {test.questions.map((q, i) => {
-          const isCorrect = q.selected === q.correctIndex;
-          const isSkipped = q.selected === null || q.selected === undefined;
-          return (
-            <div key={q.id} className="ef-card p-4 sm:p-5">
-              <div className="ef-corner tl" /><div className="ef-corner tr" /><div className="ef-corner bl" /><div className="ef-corner br" />
-              <div className="flex items-center justify-between mb-2">
-                <div className="ef-mono text-xs" style={{ color: "var(--pencil)" }}>Q{i + 1}</div>
-                {isSkipped ? (
-                  <span className="ef-mono text-[10px] uppercase px-2 py-0.5 rounded" style={{ background: "rgba(139,133,120,0.15)", color: "var(--pencil)" }}>Skipped</span>
-                ) : isCorrect ? (
-                  <span className="ef-mono text-[10px] uppercase px-2 py-0.5 rounded flex items-center gap-1" style={{ background: "rgba(47,110,79,0.12)", color: "var(--ledger)" }}><CheckCircle2 size={11} /> Correct</span>
-                ) : (
-                  <span className="ef-mono text-[10px] uppercase px-2 py-0.5 rounded flex items-center gap-1" style={{ background: "rgba(178,58,46,0.1)", color: "var(--stamp)" }}><XCircle size={11} /> Wrong</span>
-                )}
-              </div>
-              <div className="ef-serif font-semibold text-base mb-3" style={{ color: "var(--graphite)" }}>{q.question}</div>
-              <div className="flex flex-col gap-2 mb-3">
-                {q.options.map((opt, idx) => {
-                  let cls = "";
-                  if (idx === q.correctIndex) cls = "ef-bubble-correct";
-                  else if (idx === q.selected) cls = "ef-bubble-wrong";
-                  return (
-                    <div key={idx} className="flex items-center gap-3">
-                      <div className={`ef-bubble ${cls}`} style={{ width: 30, height: 30, fontSize: 12 }}>{String.fromCharCode(65 + idx)}</div>
-                      <div className="text-sm" style={{ color: "var(--graphite)" }}>{opt}</div>
-                    </div>
-                  );
-                })}
-              </div>
-              {q.explanation && (
-                <div className="text-xs p-2.5 rounded" style={{ background: "rgba(27,42,74,0.05)", color: "var(--graphite)" }}>
-                  <span className="ef-mono uppercase" style={{ color: "var(--ink)" }}>Why: </span>{q.explanation}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+  const [filter, setFilter] = useState("all");
 
-function HistoryScreen({ history, onOpen, onClear, onNewTest, onBack }) {
+  const filtered = test.questions.filter((q) => {
+    if (filter === "all") return true;
+    const isSkipped = q.selected === null || q.selected === undefined;
+    if (filter === "correct") return !isSkipped && q.selected === q.correctIndex;
+    if (filter === "wrong") return !isSkipped && q.selected !== q.correctIndex;
+    if (filter === "skipped") return isSkipped;
+    return true;
+  });
+
+  const counts = {
+    all: test.questions.length,
+    correct: test.questions.filter((q) => q.selected !== null && q.selected !== undefined && q.selected === q.correctIndex).length,
+    wrong: test.questions.filter((q) => q.selected !== null && q.selected !== undefined && q.selected !== q.correctIndex).length,
+    skipped: test.questions.filter((q) => q.selected === null || q.selected === undefined).length,
+  };
+
   return (
     <div className="ef-anim">
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={onBack} className="ef-btn-secondary px-3 py-1.5 rounded text-sm flex items-center gap-1.5">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <button onClick={onBack} className="ef-btn ef-btn-secondary" style={{ padding: "8px 14px" }}>
           <ChevronLeft size={14} /> Back
         </button>
-        <button onClick={onNewTest} className="ef-btn-primary px-3 py-1.5 rounded text-sm flex items-center gap-1.5">
-          <Sparkles size={14} /> New Test
-        </button>
+        <h2 className="ef-subheading" style={{ fontSize: 16 }}>Answer Review</h2>
+        <div style={{ width: 72 }} />
       </div>
 
-      <div className="flex items-center justify-between mb-5">
-        <div className="ef-serif font-bold text-xl" style={{ color: "var(--ink)" }}>Past Attempts</div>
-        {history.length > 0 && (
-          <button onClick={onClear} className="text-xs ef-mono" style={{ color: "var(--stamp)" }}>Clear All</button>
-        )}
+      {/* Filter tabs */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+        {[
+          { key: "all", label: `All (${counts.all})` },
+          { key: "correct", label: `Correct (${counts.correct})` },
+          { key: "wrong", label: `Wrong (${counts.wrong})` },
+          { key: "skipped", label: `Skipped (${counts.skipped})` },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setFilter(tab.key)}
+            className={`ef-tab ${filter === tab.key ? "ef-tab-active" : ""}`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {history.length === 0 ? (
-        <div className="ef-card p-8 text-center">
-          <div className="ef-corner tl" /><div className="ef-corner tr" /><div className="ef-corner bl" /><div className="ef-corner br" />
-          <FileText size={26} style={{ color: "var(--pencil)", margin: "0 auto" }} />
-          <div className="text-sm mt-3" style={{ color: "var(--pencil)" }}>No tests taken yet. Your scorecards will appear here.</div>
-          <button onClick={onNewTest} className="ef-btn-primary px-5 py-2.5 rounded font-semibold text-sm mt-4">Start a Test</button>
+      {filtered.length === 0 ? (
+        <div className="ef-card" style={{ padding: 32, textAlign: "center", color: "var(--text-muted)" }}>
+          No questions in this category.
         </div>
       ) : (
-        <div className="flex flex-col gap-2.5">
-          {history.map((h) => (
-            <div key={h.id} onClick={() => onOpen(h.id)} className="ef-card p-4 flex items-center justify-between cursor-pointer">
-              <div>
-                <div className="ef-serif font-semibold text-sm" style={{ color: "var(--graphite)" }}>{h.topic || "Untitled Test"}</div>
-                <div className="text-xs mt-0.5" style={{ color: "var(--pencil)" }}>
-                  {h.examType} &middot; {new Date(h.date).toLocaleDateString()} &middot; {h.correct}/{h.total} correct
-                </div>
-              </div>
-              <div className="ef-serif font-bold text-lg" style={{ color: "var(--ink)" }}>{h.score}</div>
-            </div>
-          ))}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {filtered.map((q, i) => {
+            const origIdx = test.questions.indexOf(q);
+            const isCorrect = q.selected === q.correctIndex;
+            const isSkipped = q.selected === null || q.selected === undefined;
+            return (
+              <ReviewCard key={q.id} q={q} index={origIdx} isCorrect={isCorrect} isSkipped={isSkipped} />
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-/* ---------- Theme ---------- */
+function ReviewCard({ q, index, isCorrect, isSkipped }) {
+  const [expanded, setExpanded] = useState(true);
 
-const ROOT_VARS = {
-  "--ink": "#1B2A4A",
-  "--paper": "#F3EFE3",
-  "--paper-card": "#FAF7EE",
-  "--stamp": "#B23A2E",
-  "--graphite": "#2B2B28",
-  "--ledger": "#2F6E4F",
-  "--pencil": "#8B8578",
-};
+  return (
+    <div className="ef-card" style={{ overflow: "hidden" }}>
+      {/* Header */}
+      <div
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "12px 16px", cursor: "pointer", borderBottom: expanded ? "1px solid var(--border-light)" : "none"
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="ef-badge ef-badge-muted" style={{ fontVariantNumeric: "tabular-nums" }}>Q{index + 1}</span>
+          {isSkipped ? (
+            <span className="ef-badge ef-badge-muted">Skipped</span>
+          ) : isCorrect ? (
+            <span className="ef-badge ef-badge-success"><CheckCircle2 size={10} /> Correct</span>
+          ) : (
+            <span className="ef-badge ef-badge-danger"><XCircle size={10} /> Wrong</span>
+          )}
+        </div>
+        <ChevronDown size={16} style={{
+          color: "var(--text-muted)", transition: "transform 0.2s",
+          transform: expanded ? "rotate(180deg)" : "rotate(0deg)"
+        }} />
+      </div>
 
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+      {/* Body */}
+      {expanded && (
+        <div style={{ padding: "16px" }}>
+          <p className="ef-subheading" style={{ fontSize: 14, lineHeight: 1.55, marginBottom: 14, color: "var(--text-primary)", whiteSpace: "pre-line" }}>
+            {q.question}
+          </p>
 
-.ef-root {
-  font-family: 'IBM Plex Sans', sans-serif;
-  background-color: var(--paper);
-  background-image: repeating-linear-gradient(0deg, rgba(27,42,74,0.035) 0px, rgba(27,42,74,0.035) 1px, transparent 1px, transparent 27px);
-  color: var(--graphite);
-  min-height: 100vh;
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            {q.options.map((opt, idx) => {
+              let cls = "ef-option";
+              if (idx === q.correctIndex) cls += " ef-option-correct";
+              else if (idx === q.selected && idx !== q.correctIndex) cls += " ef-option-wrong";
+              return (
+                <div key={idx} className={cls} style={{ cursor: "default", padding: "10px 14px" }}>
+                  <div className="ef-option-letter" style={{ width: 28, height: 28, fontSize: 11 }}>{String.fromCharCode(65 + idx)}</div>
+                  <div className="ef-option-text" style={{ fontSize: 13 }}>{opt}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {q.explanation && (
+            <div className="ef-explanation">
+              <strong>Explanation: </strong>{q.explanation}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
-.ef-serif { font-family: 'Source Serif 4', serif; }
-.ef-mono { font-family: 'IBM Plex Mono', monospace; }
 
-.ef-logo-box {
-  width: 34px; height: 34px; border-radius: 4px; background: var(--ink); color: var(--paper);
-  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;
+/* ============================================
+   HISTORY SCREEN
+   ============================================ */
+
+function HistoryScreen({ history, onOpen, onClear, onNewTest, onBack }) {
+  return (
+    <div className="ef-anim">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <button onClick={onBack} className="ef-btn ef-btn-secondary" style={{ padding: "8px 14px" }}>
+          <ChevronLeft size={14} /> Back
+        </button>
+        <button onClick={onNewTest} className="ef-btn ef-btn-primary" style={{ padding: "8px 16px" }}>
+          <Sparkles size={14} /> New Test
+        </button>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <h2 className="ef-subheading" style={{ fontSize: 20 }}>Past Attempts</h2>
+        {history.length > 0 && (
+          <button onClick={onClear} className="ef-btn ef-btn-ghost" style={{ fontSize: 12, color: "var(--danger)", padding: "4px 8px" }}>
+            Clear All
+          </button>
+        )}
+      </div>
+
+      {history.length === 0 ? (
+        <div className="ef-card" style={{ padding: "48px 24px", textAlign: "center" }}>
+          <FileText size={32} style={{ color: "var(--text-muted)", margin: "0 auto 12px" }} />
+          <p style={{ color: "var(--text-muted)", fontSize: 14, marginBottom: 16 }}>No tests taken yet. Your results will appear here.</p>
+          <button onClick={onNewTest} className="ef-btn ef-btn-primary" style={{ padding: "10px 24px" }}>Start a Test</button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {history.map((h) => {
+            const pct = h.total > 0 ? Math.round((h.correct / h.total) * 100) : 0;
+            const scoreColor = pct >= 70 ? "var(--success)" : pct >= 40 ? "var(--warning)" : "var(--danger)";
+            return (
+              <div key={h.id} onClick={() => onOpen(h.id)} className="ef-card ef-card-interactive" style={{ padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="ef-subheading" style={{ fontSize: 14, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {h.topic || "Untitled Test"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                    {h.examType} · {new Date(h.date).toLocaleDateString()} · {h.correct}/{h.total} correct
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 12 }}>
+                  <span className="ef-badge" style={{ background: `${scoreColor}18`, color: scoreColor, fontWeight: 700 }}>
+                    {pct}%
+                  </span>
+                  <span className="ef-subheading" style={{ fontSize: 18, color: "var(--text-primary)" }}>{h.score}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
-
-.ef-card { background: var(--paper-card); border: 1.5px solid var(--ink); border-radius: 6px; position: relative; }
-.ef-corner { position: absolute; width: 14px; height: 14px; pointer-events: none; }
-.ef-corner.tl { top: -1.5px; left: -1.5px; border-top: 3px solid var(--stamp); border-left: 3px solid var(--stamp); }
-.ef-corner.tr { top: -1.5px; right: -1.5px; border-top: 3px solid var(--stamp); border-right: 3px solid var(--stamp); }
-.ef-corner.bl { bottom: -1.5px; left: -1.5px; border-bottom: 3px solid var(--stamp); border-left: 3px solid var(--stamp); }
-.ef-corner.br { bottom: -1.5px; right: -1.5px; border-bottom: 3px solid var(--stamp); border-right: 3px solid var(--stamp); }
-
-.ef-chip { border: 1.5px solid var(--pencil); background: transparent; color: var(--graphite); transition: all .15s ease; cursor: pointer; }
-.ef-chip:hover { border-color: var(--ink); }
-.ef-chip-active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-
-.ef-btn-primary { background: var(--stamp); color: var(--paper); border: none; cursor: pointer; transition: transform .1s ease, box-shadow .15s ease; }
-.ef-btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 0 rgba(27,42,74,0.2); }
-.ef-btn-primary:disabled { opacity: .35; cursor: not-allowed; }
-.ef-btn-secondary { background: transparent; border: 1.5px solid var(--ink); color: var(--ink); cursor: pointer; transition: background .15s ease; }
-.ef-btn-secondary:hover:not(:disabled) { background: rgba(27,42,74,0.06); }
-.ef-btn-secondary:disabled { opacity: .3; cursor: not-allowed; }
-
-.ef-bubble {
-  width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--ink);
-  display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace;
-  font-weight: 600; font-size: 13px; cursor: pointer; flex-shrink: 0; transition: all .15s ease; background: var(--paper-card);
-}
-.ef-bubble:hover { border-color: var(--stamp); }
-.ef-bubble-selected { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-.ef-bubble-correct { background: var(--ledger); color: var(--paper); border-color: var(--ledger); }
-.ef-bubble-wrong { background: var(--stamp); color: var(--paper); border-color: var(--stamp); }
-
-.ef-dot { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--pencil); cursor: pointer; }
-.ef-dot-answered { background: var(--ink); border-color: var(--ink); }
-.ef-dot-current { box-shadow: 0 0 0 3px rgba(178,58,46,0.3); border-color: var(--stamp); }
-
-.ef-dashed { border: 2px dashed var(--pencil); transition: border-color .15s ease, background .15s ease; }
-.ef-dashed-active { border-color: var(--stamp); background: rgba(178,58,46,0.04); }
-
-.ef-input { border: 1.5px solid var(--pencil); background: var(--paper-card); color: var(--graphite); }
-.ef-input:focus { border-color: var(--ink); }
-
-@keyframes ef-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-.ef-anim { animation: ef-fade .35s ease; }
-`;
