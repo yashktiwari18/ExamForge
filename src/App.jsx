@@ -354,7 +354,9 @@ export default function ExamForge() {
     let topics = [];
     let examGuesses = [];
     try {
-      for (let i = 0; i < images.length; i++) {
+      const levelMeta = getExamLevelMetadata(examType, subExam);
+const targetExamLevel = getTargetExamLevel(levelMeta);
+for (let i = 0; i < images.length; i++) {
         setProcessingStatus(`Reading question paper image ${i + 1} of ${images.length}...`);
         const result = await extractFromImage(images[i]);
         if (result.topic) topics.push(result.topic);
@@ -363,36 +365,34 @@ export default function ExamForge() {
         const extractedExamType = result.examType || examType;
         (result.questions || []).forEach((q) => {
           allQuestions.push(
-            normalizeQuestionMetadata(q, {
-              source: "extracted",
-              topic: extractedTopic,
-              examType: extractedExamType,
-              difficulty: "medium",
-              subtopic: extractedTopic,
-            })
+                normalizeQuestionMetadata(q, {
+                  source: "extracted",
+                  topic: extractedTopic,
+                  examType: extractedExamType,
+                  difficulty: levelMeta,
+                  subtopic: extractedTopic,
+                })
           );
         });
       }
       const topic = topicText.trim() || topics[0] || "General Knowledge";
-      const levelMeta = getExamLevelMetadata(examType, subExam);
-
+      
       const fullExamName = subExam
         ? `${examType} — ${subExam} (Target Level: ${levelMeta})`
         : `${examType} (Target Level: ${levelMeta})`;
 
-      const targetExamLevel = getTargetExamLevel(levelMeta);
       const examGuess = examGuesses[0] || fullExamName;
       const repositoryPYQs = getRepositoryPYQs(examGuess, topic);
 
       repositoryPYQs.forEach((pyq) => {
         allQuestions.push(
-          normalizeQuestionMetadata(pyq, {
-            source: "pyq",
-            topic: pyq.topic,
-            examType: examGuess,
-            difficulty: "medium",
-            subtopic: pyq.topic,
-          })
+            normalizeQuestionMetadata(pyq, {
+              source: "pyq",
+              topic: pyq.topic,
+              examType: examGuess,
+              difficulty: levelMeta,
+              subtopic: pyq.topic,
+            })
         );
       });
 
@@ -422,7 +422,7 @@ export default function ExamForge() {
                   source: "generated",
                   topic,
                   examType: examGuess,
-                  difficulty: "medium",
+                  difficulty: levelMeta,
                   subtopic: topic,
                 })
               );
