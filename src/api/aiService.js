@@ -116,16 +116,114 @@ function cleanAndParseJSON(rawText) {
   }
 }
 
-function generateLevelAwareMockQuestions(topic, examType, avoidList = [], count = 5) {
+function generateLevelAwareMockQuestions(topic, examType, examLevel = "moderate", avoidList = [], count = 5) {
   const topicLower = topic.toLowerCase();
   const examLower = examType.toLowerCase();
+  const normalizedExamLevel = String(examLevel || "moderate").toLowerCase();
   const avoidSet = new Set(avoidList.map((a) => String(a).toLowerCase().trim()));
 
-  const isUPSC = examLower.includes("upsc") || examLower.includes("cse") || examLower.includes("hard & conceptual");
-  const isPO = examLower.includes("po") || examLower.includes("sbi") || examLower.includes("ibps po") || examLower.includes("rbi grade b");
-  const isMTS = examLower.includes("mts") || examLower.includes("group d") || examLower.includes("constable") || examLower.includes("matriculation") || examLower.includes("10th");
+  // =====================================================
+// EXAM LEVEL DETECTION
+// =====================================================
+
+const isUPSC =
+  examLower.includes("upsc") ||
+  examLower.includes("cse") ||
+  examLower.includes("ias") ||
+  examLower.includes("hard & conceptual");
+
+const isBankingPO =
+  examLower.includes("ibps po") ||
+  examLower.includes("sbi po") ||
+  examLower.includes("po level") ||
+  examLower.includes("probationary officer");
+
+const isBankingClerk =
+  examLower.includes("ibps clerk") ||
+  examLower.includes("sbi clerk") ||
+  examLower.includes("clerk");
+
+const isRBI =
+  examLower.includes("rbi grade b") ||
+  examLower.includes("rbi assistant");
+
+const isRailway =
+  examLower.includes("railway") ||
+  examLower.includes("rrb") ||
+  examLower.includes("ntpc") ||
+  examLower.includes("alp") ||
+  examLower.includes("technician");
+
+const isRailwayGroupD =
+  examLower.includes("group d");
+
+const isSSCCGL =
+  examLower.includes("ssc cgl");
+
+const isSSCCHSL =
+  examLower.includes("ssc chsl");
+
+const isSSCMTS =
+  examLower.includes("ssc mts") ||
+  examLower.includes("mts");
+
+const isDefence =
+  examLower.includes("nda") ||
+  examLower.includes("cds") ||
+  examLower.includes("defence");
+
+const isConstable =
+  examLower.includes("constable") ||
+  examLower.includes("gd");
+
+const isEasyLevel =
+  normalizedExamLevel.includes("basic") ||
+  examLower.includes("10th") ||
+  examLower.includes("matriculation") ||
+  isSSCMTS ||
+  isRailwayGroupD;
+
+const isMediumLevel =
+  normalizedExamLevel.includes("moderate") ||
+  isRailway ||
+  isSSCCHSL ||
+  isBankingClerk ||
+  isConstable;
+
+const isHardLevel =
+  normalizedExamLevel.includes("advanced") ||
+  isUPSC ||
+  isBankingPO ||
+  isRBI ||
+  isSSCCGL ||
+  isDefence;
 
   const questions = [];
+
+  const randomInt = (min, max) =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
+
+const shuffle = (array) =>
+  [...array].sort(() => Math.random() - 0.5);
+
+const createMathQuestion = ({
+  question,
+  correctAnswer,
+  wrongAnswers,
+  explanation
+}) => {
+  const options = shuffle([
+    String(correctAnswer),
+    ...wrongAnswers.map(String)
+  ]);
+
+  return {
+    question,
+    options,
+    correctIndex: options.indexOf(String(correctAnswer)),
+    explanation
+  };
+};
 
   const tryAdd = (item) => {
     const qText = item.question.toLowerCase().trim();
@@ -177,7 +275,7 @@ function generateLevelAwareMockQuestions(topic, examType, avoidList = [], count 
         }
       ];
       bank.forEach(tryAdd);
-    } else if (isMTS) {
+    } else if (isSSCMTS) {
       const bank = [
         {
           question: `[SSC MTS / Group D Level] How many Fundamental Duties are currently present in Article 51A of the Indian Constitution?`,
@@ -251,110 +349,308 @@ function generateLevelAwareMockQuestions(topic, examType, avoidList = [], count 
       ];
       bank.forEach(tryAdd);
     }
-  } else if (topicLower.includes("math") || topicLower.includes("quant") || topicLower.includes("aptitude") || topicLower.includes("arithmetic")) {
-    if (isMTS) {
-      const bank = [
-        {
-          question: `[SSC MTS / Group D Level] If 20% of a number is 60, what is the number?`,
-          options: ["300", "250", "400", "350"],
-          correctIndex: 0,
-          explanation: "Number = (60 * 100) / 20 = 300."
-        },
-        {
-          question: `[SSC MTS / Group D Level] A car covers a distance of 180 km in 3 hours. What is its speed in km/h?`,
-          options: ["60 km/h", "50 km/h", "70 km/h", "45 km/h"],
-          correctIndex: 0,
-          explanation: "Speed = Distance / Time = 180 / 3 = 60 km/h."
-        },
-        {
-          question: `[SSC MTS / Group D Level] What is the simple interest on ₹4,000 at 5% per annum for 2 years?`,
-          options: ["₹400", "₹500", "₹300", "₹450"],
-          correctIndex: 0,
-          explanation: "SI = (4000 * 5 * 2) / 100 = ₹400."
-        },
-        {
-          question: `[SSC MTS / Group D Level] Find the average of the first five natural numbers (1, 2, 3, 4, 5).`,
-          options: ["3", "2.5", "4", "3.5"],
-          correctIndex: 0,
-          explanation: "Sum = 15, Average = 15 / 5 = 3."
-        },
-        {
-          question: `[SSC MTS / Group D Level] The cost price of an article is ₹200 and it is sold for ₹240. What is the profit percentage?`,
-          options: ["20%", "25%", "15%", "18%"],
-          correctIndex: 0,
-          explanation: "Profit = 40. Profit % = (40 / 200) * 100 = 20%."
-        }
+  } else if (
+  topicLower.includes("math") ||
+  topicLower.includes("quant") ||
+  topicLower.includes("aptitude") ||
+  topicLower.includes("arithmetic")
+) {
+
+  const mathGenerators = [];
+
+  // =====================================================
+  // EASY LEVEL
+  // SSC MTS / Railway Group D / Matriculation
+  // =====================================================
+
+  if (isEasyLevel) {
+
+    mathGenerators.push(
+
+      // Percentage
+      () => {
+        const number = randomInt(200, 1000);
+        const percent = randomInt(10, 40);
+        const answer = (number * percent) / 100;
+
+        return createMathQuestion({
+          question: `[${examType}] What is ${percent}% of ${number}?`,
+          correctAnswer: answer,
+          wrongAnswers: [
+            answer + randomInt(10, 50),
+            answer - randomInt(5, 20),
+            answer + randomInt(60, 100)
+          ],
+          explanation: `${percent}% of ${number} = (${percent} × ${number}) / 100 = ${answer}.`
+        });
+      },
+
+      // Average
+      () => {
+        const a = randomInt(10, 40);
+        const b = randomInt(10, 40);
+        const c = randomInt(10, 40);
+        const d = randomInt(10, 40);
+        const e = randomInt(10, 40);
+
+        const answer = (a + b + c + d + e) / 5;
+
+        return createMathQuestion({
+          question: `[${examType}] Find the average of ${a}, ${b}, ${c}, ${d} and ${e}.`,
+          correctAnswer: answer,
+          wrongAnswers: [
+            answer + 2,
+            answer - 2,
+            answer + 4
+          ],
+          explanation: `Average = (${a} + ${b} + ${c} + ${d} + ${e}) / 5 = ${answer}.`
+        });
+      },
+
+      // Speed
+      () => {
+        const speed = randomInt(30, 80);
+        const time = randomInt(2, 8);
+        const distance = speed * time;
+
+        return createMathQuestion({
+          question: `[${examType}] A train travels at ${speed} km/h for ${time} hours. What distance does it cover?`,
+          correctAnswer: `${distance} km`,
+          wrongAnswers: [
+            `${distance + speed} km`,
+            `${distance - speed} km`,
+            `${distance + randomInt(20, 60)} km`
+          ],
+          explanation: `Distance = Speed × Time = ${speed} × ${time} = ${distance} km.`
+        });
+      }
+    );
+  }
+
+
+  // =====================================================
+  // BANKING PO / RBI / HARD LEVEL
+  // =====================================================
+
+  if (isBankingPO || isRBI || isHardLevel) {
+
+    mathGenerators.push(
+
+      // Compound Growth
+      () => {
+        const amount = randomInt(2, 4);
+        const years = randomInt(2, 4);
+
+        const answer = Math.pow(amount, years);
+
+        return createMathQuestion({
+          question: `[${examType}] An investment multiplies by ${amount} times every year. What will be the multiplication factor after ${years} years?`,
+          correctAnswer: `${answer} times`,
+          wrongAnswers: [
+            `${answer + amount} times`,
+            `${answer - amount} times`,
+            `${amount * years} times`
+          ],
+          explanation: `Multiplication factor = ${amount}^${years} = ${answer} times.`
+        });
+      },
+
+      // Pipes and Cistern
+      () => {
+        const a = randomInt(6, 12);
+        const b = randomInt(12, 24);
+
+        const answer = (a * b) / (a + b);
+
+        return createMathQuestion({
+          question: `[${examType}] Pipe A can fill a tank in ${a} hours and Pipe B can fill it in ${b} hours. How long will both pipes take together?`,
+          correctAnswer: `${answer} hours`,
+          wrongAnswers: [
+            `${a + b} hours`,
+            `${Math.max(a, b)} hours`,
+            `${Math.round(answer + 2)} hours`
+          ],
+          explanation: `Combined rate = 1/${a} + 1/${b}. Therefore, time = ${a}×${b}/(${a}+${b}) = ${answer} hours.`
+        });
+      },
+
+      // Percentage Increase and Decrease
+      () => {
+        const increase = randomInt(10, 40);
+        const decrease = randomInt(10, 30);
+
+        const answer =
+          ((1 + increase / 100) * (1 - decrease / 100) - 1) * 100;
+
+        return createMathQuestion({
+          question: `[${examType}] A value is increased by ${increase}% and then decreased by ${decrease}%. What is the net percentage change?`,
+          correctAnswer: `${answer.toFixed(2)}%`,
+          wrongAnswers: [
+            `${(increase - decrease).toFixed(2)}%`,
+            `${Math.abs(answer).toFixed(2)}% increase`,
+            `${(answer + 5).toFixed(2)}%`
+          ],
+          explanation: `Net change = [(1 + ${increase}/100)(1 - ${decrease}/100) - 1] × 100 = ${answer.toFixed(2)}%.`
+        });
+      }
+    );
+  }
+
+
+  // =====================================================
+  // RAILWAY / SSC / BANKING CLERK / MEDIUM LEVEL
+  // =====================================================
+
+  if (isRailway || isSSCCGL || isSSCCHSL || isBankingClerk || isMediumLevel) {
+
+    mathGenerators.push(
+
+      // Train / Speed
+      () => {
+        const speed = randomInt(40, 90);
+        const time = randomInt(2, 6);
+        const distance = speed * time;
+
+        return createMathQuestion({
+          question: `[${examType}] A train travels at ${speed} km/h for ${time} hours. What distance does it cover?`,
+          correctAnswer: `${distance} km`,
+          wrongAnswers: [
+            `${distance + speed} km`,
+            `${distance - speed} km`,
+            `${speed + time} km`
+          ],
+          explanation: `Distance = Speed × Time = ${speed} × ${time} = ${distance} km.`
+        });
+      },
+
+      // Profit and Loss
+      () => {
+        const cost = randomInt(200, 1000);
+        const profitPercent = randomInt(10, 40);
+        const profit = (cost * profitPercent) / 100;
+        const selling = cost + profit;
+
+        return createMathQuestion({
+          question: `[${examType}] An article is bought for ₹${cost} and sold at a profit of ${profitPercent}%. What is the selling price?`,
+          correctAnswer: `₹${selling}`,
+          wrongAnswers: [
+            `₹${cost + profitPercent}`,
+            `₹${cost - profit}`,
+            `₹${selling + 100}`
+          ],
+          explanation: `Profit = ${profitPercent}% of ₹${cost} = ₹${profit}. Selling Price = ₹${cost} + ₹${profit} = ₹${selling}.`
+        });
+      },
+
+      // Ratio
+      () => {
+        const x = randomInt(2, 8);
+        const y = randomInt(3, 10);
+        const multiplier = randomInt(4, 12);
+
+        const first = x * multiplier;
+        const second = y * multiplier;
+
+        return createMathQuestion({
+          question: `[${examType}] The ratio of two numbers is ${x}:${y}. If the first number is ${first}, what is the second number?`,
+          correctAnswer: second,
+          wrongAnswers: [
+            second + randomInt(2, 10),
+            second - randomInt(1, Math.min(5, second - 1)),
+            first
+          ],
+          explanation: `Multiplier = ${first} ÷ ${x} = ${multiplier}. Second number = ${y} × ${multiplier} = ${second}.`
+        });
+      },
+
+      // Simple Interest
+      () => {
+        const principal = randomInt(2, 10) * 1000;
+        const rate = randomInt(5, 12);
+        const time = randomInt(2, 5);
+
+        const interest = (principal * rate * time) / 100;
+
+        return createMathQuestion({
+          question: `[${examType}] Find the simple interest on ₹${principal} at ${rate}% per annum for ${time} years.`,
+          correctAnswer: `₹${interest}`,
+          wrongAnswers: [
+            `₹${interest + 500}`,
+            `₹${Math.max(100, interest - 500)}`,
+            `₹${interest + 1000}`
+          ],
+          explanation: `SI = (P × R × T) / 100 = (${principal} × ${rate} × ${time}) / 100 = ₹${interest}.`
+        });
+      }
+    );
+  }
+
+
+  // =====================================================
+  // FALLBACK IF NO EXAM LEVEL MATCHES
+  // =====================================================
+
+  if (mathGenerators.length === 0) {
+
+    mathGenerators.push(
+
+      () => {
+        const number = randomInt(100, 1000);
+        const percent = randomInt(5, 50);
+        const answer = (number * percent) / 100;
+
+        return createMathQuestion({
+          question: `[${examType}] What is ${percent}% of ${number}?`,
+          correctAnswer: answer,
+          wrongAnswers: [
+            answer + 10,
+            answer - 10,
+            answer + 20
+          ],
+          explanation: `${percent}% of ${number} = ${answer}.`
+        });
+      },
+
+      () => {
+        const a = randomInt(10, 50);
+        const b = randomInt(10, 50);
+        const answer = a + b;
+
+        return createMathQuestion({
+          question: `[${examType}] What is ${a} + ${b}?`,
+          correctAnswer: answer,
+          wrongAnswers: [
+            answer + 5,
+            answer - 5,
+            answer + 10
+          ],
+          explanation: `${a} + ${b} = ${answer}.`
+        });
+      }
+    );
+  }
+
+
+  // =====================================================
+  // GENERATE UNIQUE QUESTIONS
+  // =====================================================
+
+  let attempts = 0;
+  const maxAttempts = count * 20;
+
+  while (questions.length < count && attempts < maxAttempts) {
+
+    const generator =
+      mathGenerators[
+        randomInt(0, mathGenerators.length - 1)
       ];
-      bank.forEach(tryAdd);
-    } else if (isPO) {
-      const bank = [
-        {
-          question: `[Banking PO Level] A sum of money placed at compound interest doubles itself in 5 years. In how many years will it amount to 8 times itself at the same rate?`,
-          options: ["15 years", "10 years", "20 years", "12 years"],
-          correctIndex: 0,
-          explanation: "Amount becomes 2^3 = 8 times in 3 * 5 = 15 years."
-        },
-        {
-          question: `[Banking PO Level] A vessel contains a mixture of milk and water in the ratio 7:5. If 9 liters of mixture is drawn off and replaced with water, the ratio becomes 7:9. How many liters of milk was in the vessel initially?`,
-          options: ["21 liters", "28 liters", "35 liters", "14 liters"],
-          correctIndex: 0,
-          explanation: "Initial quantity of milk = 21 liters."
-        },
-        {
-          question: `[Banking PO Level] Two pipes A and B can fill a tank in 15 hours and 20 hours respectively, while a third pipe C can empty it in 30 hours. If all three pipes are opened together, how long will it take to fill the tank?`,
-          options: ["12 hours", "10 hours", "14 hours", "15 hours"],
-          correctIndex: 0,
-          explanation: "Net rate = 1/15 + 1/20 - 1/30 = 5/60 = 1/12. Time = 12 hours."
-        },
-        {
-          question: `[Banking PO Level] A seller marks his goods 40% above cost price and allows a discount of 20%. If he makes a net profit of ₹96, what is the cost price of the goods?`,
-          options: ["₹800", "₹900", "₹1,000", "₹750"],
-          correctIndex: 0,
-          explanation: "Effective profit % = 40 - 20 - (40*20)/100 = 12%. CP = 96 / 0.12 = ₹800."
-        },
-        {
-          question: `[Banking PO Level] The present age of A is 4 years more than B's age. Six years ago, the ratio of A's age to B's age was 3:2. What is the present age of B?`,
-          options: ["14 years", "18 years", "12 years", "16 years"],
-          correctIndex: 0,
-          explanation: "B = 14 years."
-        }
-      ];
-      bank.forEach(tryAdd);
-    } else {
-      const bank = [
-        {
-          question: `[${examType}] If a number is increased by 25% and then decreased by 20%, what is the net percentage change?`,
-          options: ["No change (0%)", "5% increase", "4% decrease", "2% increase"],
-          correctIndex: 0,
-          explanation: "Net change = 25 - 20 - (25*20)/100 = 0%."
-        },
-        {
-          question: `[${examType}] A train 200 meters long passes a pole in 10 seconds. What is the speed of the train in km/h?`,
-          options: ["72 km/h", "60 km/h", "54 km/h", "80 km/h"],
-          correctIndex: 0,
-          explanation: "Speed = 200 / 10 = 20 m/s = 72 km/h."
-        },
-        {
-          question: `[${examType}] The ratio of two numbers is 4:5 and their HCF is 6. What is their LCM?`,
-          options: ["120", "90", "60", "150"],
-          correctIndex: 0,
-          explanation: "Numbers = 24 and 30. LCM = 120."
-        },
-        {
-          question: `[${examType}] A can do a job in 12 days and B can do it in 24 days. How many days will they take together?`,
-          options: ["8 days", "9 days", "6 days", "10 days"],
-          correctIndex: 0,
-          explanation: "Combined rate = 1/12 + 1/24 = 1/8. Time = 8 days."
-        },
-        {
-          question: `[${examType}] A principal of ₹6,000 yields ₹1,440 simple interest in 3 years. What is the annual interest rate?`,
-          options: ["8%", "7%", "9%", "10%"],
-          correctIndex: 0,
-          explanation: "Rate = (1440 * 100) / (6000 * 3) = 8%."
-        }
-      ];
-      bank.forEach(tryAdd);
-    }
+
+    const question = generator();
+
+    tryAdd(question);
+
+    attempts++;
+  }
   } else {
     const genericTemplates = [
       {
@@ -401,7 +697,9 @@ function generateLevelAwareMockQuestions(topic, examType, avoidList = [], count 
   }
 
   return questions.slice(0, count);
+
 }
+
 
 function generateClientMockResponse(system = "", content = "") {
   const contentText = typeof content === "string"
@@ -461,7 +759,12 @@ function generateClientMockResponse(system = "", content = "") {
     };
   }
 
-  const questions = generateLevelAwareMockQuestions(topic, examType, avoidList, count);
+  let examLevel = "moderate";
+  const levelMatch = contentText.match(/Target level:\s*([^\.\n|]+)/i);
+  if (levelMatch && levelMatch[1].trim()) {
+    examLevel = levelMatch[1].trim();
+  }
+  const questions = generateLevelAwareMockQuestions(topic, examType, examLevel, avoidList, count);
   return { questions };
 }
 
@@ -598,9 +901,10 @@ If the correct answer is marked, underlined, or circled in the image, use it. Ot
 }
 
 export async function generateBatch(topic, examContext, avoidList, batchSize) {
-  const examCategory = examContext?.category || "General";
-  const subExam = examContext?.subExam || examContext?.name || "General";
-  const targetLevel = examContext?.level || "General Competitive";
+  const context = typeof examContext === "string" ? { category: examContext } : (examContext || {});
+  const examCategory = context.category || context.name || "General";
+  const subExam = context.subExam || context.name || "General";
+  const targetLevel = context.level || "General Competitive";
   const examLabel = `${examCategory} - ${subExam} - ${targetLevel}`;
   const system = `You are an expert question-setter for Indian competitive exams.
 
@@ -626,6 +930,7 @@ Return ONLY valid JSON in exactly this structure:
 {"questions":[{"question":"...","options":["...","...","...","..."],"correctIndex":0,"explanation":"one short sentence"}]}.`;
 
   const content = `Requested topic: ${topic || "General Knowledge"}
+  Exam type: ${examLabel}
 Selected exam category: ${examCategory}
 Selected sub-exam: ${subExam}
 Target level: ${targetLevel}Previously generated / used questions that MUST NOT be repeated or semantically duplicated:
@@ -636,3 +941,4 @@ Generate exactly ${batchSize} brand new, unique questions now matching the targe
 }
 
 export { getAIErrorMessage };
+

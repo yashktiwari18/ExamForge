@@ -161,6 +161,24 @@ function getWeakTopics(topicWise) {
     .map(([topic]) => topic);
 }
 
+function getTargetExamLevel(levelMeta) {
+  const normalized = String(levelMeta || "").toLowerCase();
+
+  if (
+    normalized.includes("easy") ||
+    normalized.includes("10th") ||
+    normalized.includes("matriculation")
+  ) {
+    return "basic";
+  }
+
+  if (normalized.includes("hard") || normalized.includes("advanced")) {
+    return "advanced";
+  }
+
+  return "moderate";
+}
+
 function buildPerformance(answerResults) {
   const records = Object.values(answerResults);
   const topicWise = {};
@@ -357,7 +375,12 @@ export default function ExamForge() {
       }
       const topic = topicText.trim() || topics[0] || "General Knowledge";
       const levelMeta = getExamLevelMetadata(examType, subExam);
-      const fullExamName = subExam ? `${examType} — ${subExam} (Target Level: ${levelMeta})` : `${examType} (Target Level: ${levelMeta})`;
+
+      const fullExamName = subExam
+        ? `${examType} — ${subExam} (Target Level: ${levelMeta})`
+        : `${examType} (Target Level: ${levelMeta})`;
+
+      const targetExamLevel = getTargetExamLevel(levelMeta);
       const examGuess = examGuesses[0] || fullExamName;
       const repositoryPYQs = getRepositoryPYQs(examGuess, topic);
 
@@ -387,7 +410,12 @@ export default function ExamForge() {
           setProcessingStatus(`Generating ${batchSize} new practice question${batchSize > 1 ? "s" : ""}...`);
           const avoidList = allQuestions.map((q) => q.question);
           try {
-            const genResult = await generateBatch(topic, examGuess, avoidList, batchSize);
+            const genResult = await generateBatch(topic, {
+              category: examType,
+              subExam: subExam || undefined,
+              name: subExam || examType,
+              level: `${targetExamLevel} (${levelMeta})`,
+            }, avoidList, batchSize);
             (genResult.questions || []).forEach((q) => {
               allQuestions.push(
                 normalizeQuestionMetadata(q, {
