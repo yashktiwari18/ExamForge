@@ -11,7 +11,26 @@ If the correct answer is marked, underlined, or circled in the image, use it. Ot
   return requestGeminiJson(sys, content);
 }
 
-export async function generateBatch(topic, examGuess, avoidList, batchSize) {
+export async function generateBatch(topic, examGuess, avoidList, batchSize, referencePYQs = []) {
+  const referenceContext = referencePYQs && referencePYQs.length
+    ? `
+REFERENCE PYQs FOR STYLE & DIFFICULTY (USE AS GUIDANCE ONLY; DO NOT COPY OR PARAPHRASE):
+${referencePYQs
+  .slice(0, 4)
+  .map((pyq, index) => {
+    const options = Array.isArray(pyq.options) ? pyq.options.join(" | ") : "";
+    return `Reference PYQ ${index + 1}:\nQuestion: ${pyq.question || ""}\nOptions: ${options}\n`;
+  })
+  .join("\n\n")}
+
+Rules for reference PYQs:
+1. Use them only to match the exam style, difficulty, and question framing.
+2. Do not copy, remix, or paraphrase any reference question.
+3. Generate fresh original questions on the same topic and exam pattern.
+4. If no relevant reference PYQ exists, ignore this section.
+`
+    : "";
+
   const sys = `You are an expert question-setter for Indian competitive exams.
 
 Generate exactly ${batchSize} original, high-quality multiple-choice questions.
@@ -150,6 +169,8 @@ Return exactly this structure:
 }
 
 The JSON must be complete and valid.
+
+${referenceContext}
 
 Topic: ${topic || "General Knowledge"}
 Exam type: ${examGuess || "Banking"}

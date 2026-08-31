@@ -3,6 +3,7 @@ import path from "path";
 import { PDFParse } from "pdf-parse";
 
 const pdfPath = process.argv[2];
+const outputPath = process.argv[3] || "data/pyq/rendered";
 
 if (!pdfPath) {
   console.error("Please provide the PDF path.");
@@ -30,8 +31,7 @@ const result = await parser.getScreenshot({
   scale: 1.5,
 });
 
-const outputDir = path.resolve("data/pyq/rendered");
-
+const outputDir = path.resolve(outputPath);
 fs.mkdirSync(outputDir, {
   recursive: true,
 });

@@ -1,0 +1,32 @@
+{
+  "exam": {
+    "category": "SSC",
+    "name": "MTS",
+    "year": 2024,
+    "stage": "",
+    "paper": "Shift-1"
+  },
+  "source": {
+    "type": "pyq",
+    "authority": "SSC",
+    "verified": true,
+    "sourceUrl": "",
+    "sourceFile": "SSC MTS Solved Paper-2024.pdf"
+  },
+  "questions": [
+    {
+      "id": "ssc-mts-2024-q01",
+      "questionNumber": 1,
+      "question": "The average monthly expenditure of a family was ₹8,600 during the first three months, ₹10,750 during the next four months and ₹12,920 during the last five months of a year. The total savings during the year was ₹65,300, the average monthly income (in ₹) of the family is:",
+      "options": [
+        "14,975",
+        "15,794",
+        "15,475",
+        "14,597"
+      ],
+      "correctIndex": null,
+      "topic": "Arithmetic",
+      "subTopic": "Average",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "The OCR explanation contains inconsistencies and calculation errors, making it unreliable for verification. Original explanation text: \"Sum of expenditure of frst three months = 25680 * 3 - 25800 Sum of next 4 months = 9750 x4 = 739000 Sum flat mons 9020S tcp Total expenditure =25500 + 39000 + 49600 =2L14.400 Toul 114400 + 65300  21.79.70 Required average =

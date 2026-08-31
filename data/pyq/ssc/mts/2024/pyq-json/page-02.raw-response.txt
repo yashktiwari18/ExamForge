@@ -1,0 +1,44 @@
+{
+  "exam": {
+    "category": "SSC",
+    "name": "MTS",
+    "year": 2024,
+    "stage": "",
+    "paper": ""
+  },
+  "source": {
+    "type": "pyq",
+    "authority": "SSC",
+    "verified": false,
+    "sourceUrl": "",
+    "sourceFile": "SSC MTS Solved Paper-2024.pdf"
+  },
+  "questions": [
+    {
+      "id": "ssc-mts-2024-q01",
+      "questionNumber": 22,
+      "question": "In a certain code language, 'I swim fast’ is coded as ‘ep Ik bs’ and ‘may I go is coded as “ap sb IK”. How is 'I' coded in that code language?",
+      "options": [
+        "bs",
+        "Ik",
+        "sb",
+        "ep"
+      ],
+      "correctIndex": 1,
+      "topic": "Coding-Decoding",
+      "subTopic": "Common Code",
+      "difficulty": "Easy",
+      "questionType": "MCQ",
+      "explanation": "Given codes:\n'I swim fast' -> 'ep Ik bs'\n'may I go' -> 'ap sb IK'\nThe common word in both phrases is 'I'.\nThe common code in both code sequences is 'IK'.\nTherefore, 'I' is coded as 'IK'.",
+      "answerVerified": true
+    },
+    {
+      "id": "ssc-mts-2024-q02",
+      "questionNumber": 25,
+      "question": "In a certain code language, 'WING' is coded as '2618' and 'NEAT' is coded as '3469'. What is the code for 'N' in that language?",
+      "options": [
+        "6",
+        "8",
+        "4",
+        "3"
+      ],

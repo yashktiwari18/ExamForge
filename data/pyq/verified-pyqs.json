@@ -20,7 +20,7 @@
       "source": {
         "type": "pyq",
         "authority": "UPSC",
-        "verified": false,
+        "verified": true,
         "sourceUrl": "",
         "sourceFile": "upsc-cse-prelims-2024-gs1.pdf"
       }
@@ -45,7 +45,7 @@
       "source": {
         "type": "pyq",
         "authority": "SSC",
-        "verified": false,
+        "verified": true,
         "sourceUrl": "",
         "sourceFile": "ssc-cgl-tier-1-2023.pdf"
       }

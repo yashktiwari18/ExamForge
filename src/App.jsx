@@ -13,7 +13,7 @@ import {
 } from "./api/aiService";
 
 
-import { filterPYQs } from "./utils/pyqRepository";
+import { filterPYQs, getReferencePYQs } from "./utils/pyqRepository";
 
 import { getExams, getSubExams, getExamLevelMetadata } from "./constants/examConfig";
 
@@ -398,6 +398,7 @@ export default function ExamForge() {
 
       const examGuess = examGuesses[0] || fullExamName;
       const repositoryPYQs = getRepositoryPYQs(examGuess, topic);
+      const referencePYQs = getReferencePYQs(examGuess, topic, 4);
 
       repositoryPYQs.forEach((pyq) => {
         allQuestions.push(
@@ -424,12 +425,18 @@ export default function ExamForge() {
           setProcessingStatus(`Generating ${batchSize} new practice question${batchSize > 1 ? "s" : ""}...`);
           const avoidList = allQuestions.map((q) => q.question);
           try {
-            const genResult = await generateBatch(topic, {
-              category: examType,
-              subExam: subExam || undefined,
-              name: subExam || examType,
-              level: `${targetExamLevel} (${levelMeta})`,
-            }, avoidList, batchSize);
+            const genResult = await generateBatch(
+              topic,
+              {
+                category: examType,
+                subExam: subExam || undefined,
+                name: subExam || examType,
+                level: `${targetExamLevel} (${levelMeta})`,
+              },
+              avoidList,
+              batchSize,
+              referencePYQs
+            );
             (genResult.questions || []).forEach((q) => {
               allQuestions.push(
                 normalizeQuestionMetadata(q, {

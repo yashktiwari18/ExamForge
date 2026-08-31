@@ -2,8 +2,11 @@ import fs from "fs";
 import path from "path";
 import { createWorker } from "tesseract.js";
 
-const renderedDir = path.resolve("data/pyq/rendered");
-const outputFile = path.resolve("data/pyq/ocr-output.txt");
+const renderedPath = process.argv[2] || "data/pyq/rendered";
+const outputPath = process.argv[3] || "data/pyq/ocr-output.txt";
+
+const renderedDir = path.resolve(renderedPath);
+const outputFile = path.resolve(outputPath);
 
 if (!fs.existsSync(renderedDir)) {
   console.error("Rendered PDF directory not found.");

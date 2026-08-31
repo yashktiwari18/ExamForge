@@ -1,0 +1,248 @@
+{
+  "exam": {
+    "category": "SSC",
+    "name": "MTS",
+    "year": 2024,
+    "stage": "",
+    "paper": ""
+  },
+  "source": {
+    "type": "pyq",
+    "authority": "SSC",
+    "verified": false,
+    "sourceUrl": "",
+    "sourceFile": "SSC MTS Solved Paper-2024.pdf"
+  },
+  "questions": [
+    {
+      "id": "ssc-mts-2024-q68",
+      "questionNumber": 68,
+      "question": "The following sentence has been split into four segments. Identify the segment that contains a phrasal verb error. My secretary Ms. Premlatha asked Malini to hand down all the payment slips.",
+      "options": [
+        "all the",
+        "Mrs. Premlatha asked",
+        "Malini to hand down",
+        "payment slips"
+      ],
+      "correctIndex": 2,
+      "topic": "English Grammar",
+      "subTopic": "Phrasal Verbs",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "The phrasal verb 'hand down' means to transmit from one generation to the next, or to deliver (a verdict). In this context, 'hand over' (to transfer possession) is required. Thus, 'Malini to hand down' contains the error.",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q69",
+      "questionNumber": 69,
+      "question": "What does it imply when people say to 'read between the lines'?",
+      "options": [
+        "To read something fast",
+        "To read with an ability to infer the meaning",
+        "To skip initial and final lines in a paragraph",
+        "To avoid detailed information"
+      ],
+      "correctIndex": 1,
+      "topic": "English Language",
+      "subTopic": "Idioms and Phrases",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "'To read between the lines' means to infer a meaning or intention that is not explicitly stated.",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q70",
+      "questionNumber": 70,
+      "question": "The following sentence has been split into four segments. Identify the segment that contains a grammatical error. 'The workers had been repairing / the mall road in town or eve days now'",
+      "options": [
+        "the mall road in",
+        "several days now",
+        "The workers had been repairing",
+        "town for"
+      ],
+      "correctIndex": null,
+      "topic": "English Grammar",
+      "subTopic": "Sentence Correction",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "The original sentence 'The workers had been repairing / the mall road in town or eve days now' contains an error in 'or eve days now', which should be 'for several days now'. However, the provided options do not directly map to the faulty segment as presented in the question, making it difficult to confidently determine the correct index based on the given choices and OCR quality. Option (d) 'town for' is part of the problematic phrase, but not the complete error. Option (b) 'several days now' is a correction, not an error segment.",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q71",
+      "questionNumber": 71,
+      "question": "Select the most appropriate meaning of the given idiom. 'piece of cake'",
+      "options": [
+        "A piece of cake for eating",
+        "Easy to do or achieve",
+        "A cake which is sold as a piece.",
+        "A cake that broke into pieces"
+      ],
+      "correctIndex": 1,
+      "topic": "English Language",
+      "subTopic": "Idioms and Phrases",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "'Piece of cake' is an idiom meaning something that is very easy to do.",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q73",
+      "questionNumber": 73,
+      "question": "Select the most appropriate verb form to fill in the blank. Ann ____ his bicycle to school every day.",
+      "options": [
+        "ride",
+        "riding",
+        "rides",
+        "rode"
+      ],
+      "correctIndex": 2,
+      "topic": "English Grammar",
+      "subTopic": "Verb Forms",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "The subject 'Ann' is singular, and 'every day' indicates a habitual action, requiring the simple present tense third-person singular form 'rides'.",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q74",
+      "questionNumber": 74,
+      "question": "Select the most appropriate synonym of the word ‘pursue’ from the given sentence. Dr. Kala's success in the field of science has inspired young Indians to dream big and chase those dreams with immense hard work.",
+      "options": [
+        "chase",
+        "inspired",
+        "immense",
+        "success"
+      ],
+      "correctIndex": 0,
+      "topic": "English Language",
+      "subTopic": "Synonyms",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "In the context of the sentence, 'chase' is the most appropriate synonym for 'pursue'.",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q75",
+      "questionNumber": 75,
+      "question": "The following sentence has been split into four segments. Identify the segment that contains a grammatical error. My secretary is disposed of / discuss everything in great / detail before she begins / the actual work.",
+      "options": [
+        "My secretary is disposed of",
+        "discuss everything in great detail",
+        "before she begins",
+        "the actual work."
+      ],
+      "correctIndex": 0,
+      "topic": "English Grammar",
+      "subTopic": "Phrasal Verbs",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "The correct idiom is 'disposed to' (meaning inclined to), not 'disposed of' (meaning got rid of). So, 'My secretary is disposed of' contains a grammatical error.",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q76",
+      "questionNumber": 76,
+      "question": "Select the option that correctly rectifies the underlined spelling error. 'The accideent on the highway caused a long tail jam.'",
+      "options": [
+        "accidnt",
+        "acicdent",
+        "accident",
+        "acident"
+      ],
+      "correctIndex": 2,
+      "topic": "English Language",
+      "subTopic": "Spelling Correction",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "The correct spelling of 'accideent' is 'accident'.",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q77",
+      "questionNumber": 77,
+      "question": "The following sentence has been divided into four segments. One of them contains an error. Select the segment that contains an error from the given options. 'Neither Smith mor Rose / were in the classroom / nor Rose'",
+      "options": [
+        "Neier Smits",
+        "vers in",
+        "the classroom",
+        "nor Rose"
+      ],
+      "correctIndex": null,
+      "topic": "English Grammar",
+      "subTopic": "Sentence Correction",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "The OCR text for the original sentence is highly garbled, combining multiple errors (spelling, conjunctions, redundancy). While 'mor' should be 'nor' and 'were' is misspelled as 'vers', and the ending 'nor Rose' is redundant, confidently pinpointing 'the' segment with 'a' grammatical error from the given options is difficult due to the overall poor reconstruction and multiple errors.",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q78",
+      "questionNumber": 78,
+      "question": "Select the most appropriate synonym of the underlined word. 'The project's tight deadline and complex requirements made it a gruelling task.'",
+      "options": [
+        "Empowering",
+        "Inclusive",
+        "Challenging",
+        "Accessible"
+      ],
+      "correctIndex": 2,
+      "topic": "English Language",
+      "subTopic": "Synonyms",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "'Gruelling' means extremely tiring or demanding. 'Challenging' is the best synonym among the options.",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q79",
+      "questionNumber": 79,
+      "question": "Select the most appropriate option to fill in the blank. 'He failed to finish his home-____.'",
+      "options": [
+        "fly",
+        "read",
+        "file",
+        "work"
+      ],
+      "correctIndex": 3,
+      "topic": "English Language",
+      "subTopic": "Vocabulary",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "The most common and appropriate compound word is 'homework'.",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q80",
+      "questionNumber": 80,
+      "question": "Select the most appropriate option to fill in the blank. 'Please listen to all announcements ______.'",
+      "options": [
+        "casly",
+        "generally",
+        "hungrily",
+        "attentive"
+      ],
+      "correctIndex": 3,
+      "topic": "English Grammar",
+      "subTopic": "Adverbs",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "To describe how one should listen, an adverb is needed. 'Attentively' is the correct adverbial form. Although the option provided is the adjective 'attentive', it is the semantically most appropriate choice, likely a typo in the option itself.",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q81",
+      "questionNumber": 81,
+      "question": "Select the most appropriate synonym of the given word. 'frailty'",
+      "options": [
+        "Frailty",
+        "strife",
+        "Speed",
+        "Power"
+      ],
+      "correctIndex": null,
+      "topic": "English Language",
+      "subTopic": "Synonyms",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "The word 'frailty' means weakness or delicacy. None of the provided options (Frailty, strife, Speed, Power) are synonyms. 'Frailty' itself is listed as an

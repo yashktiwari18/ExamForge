@@ -657,7 +657,7 @@ const createMathQuestion = ({
         q: (t, e) => `[${e}] Which of the following core concepts best defines ${t}?`,
         opts: (t) => [`Established regulatory and structural framework governing ${t}`, `Historical treaty signed in 1857`, `Temporary economic guideline abolished in 2000`, `Local municipal directive`],
         idx: 0,
-        exp: (t) => `This tests foundational understanding of ${t} at the specified ${e} level.`
+        exp: (t, e) => `This tests foundational understanding of ${t} at the specified ${e} level.`
       },
       {
         q: (t, e) => `[${e}] With reference to ${t}, consider the following:\n1. It plays an essential role in official curriculum standards.\n2. Implementation requires adherence to prescribed guidelines.\nWhich statement is correct?`,
@@ -691,7 +691,7 @@ const createMathQuestion = ({
         question: tpl.q(topic, examType),
         options: tpl.opts(topic),
         correctIndex: tpl.idx,
-        explanation: tpl.exp(topic)
+        explanation: tpl.exp(topic, examType)
       });
     }
   }
@@ -900,12 +900,19 @@ If the correct answer is marked, underlined, or circled in the image, use it. Ot
   return requestAI(system, content);
 }
 
-export async function generateBatch(topic, examContext, avoidList, batchSize) {
+export async function generateBatch(topic, examContext, avoidList, batchSize, referencePYQs = []) {
   const context = typeof examContext === "string" ? { category: examContext } : (examContext || {});
   const examCategory = context.category || context.name || "General";
   const subExam = context.subExam || context.name || "General";
   const targetLevel = context.level || "General Competitive";
   const examLabel = `${examCategory} - ${subExam} - ${targetLevel}`;
+  const referenceText = referencePYQs && referencePYQs.length
+    ? `\nReference PYQs for exam style and difficulty (use as guidance only; do not copy):\n${referencePYQs
+        .slice(0, 4)
+        .map((pyq, idx) => `Reference ${idx + 1}: ${pyq.question || ""}\nOptions: ${(pyq.options || []).join(" | ")}`)
+        .join("\n\n")}`
+    : "";
+
   const system = `You are an expert question-setter for Indian competitive exams.
 
 Generate exactly ${batchSize} original, high-quality, completely unique multiple-choice questions.
@@ -933,10 +940,12 @@ Return ONLY valid JSON in exactly this structure:
   Exam type: ${examLabel}
 Selected exam category: ${examCategory}
 Selected sub-exam: ${subExam}
-Target level: ${targetLevel}Previously generated / used questions that MUST NOT be repeated or semantically duplicated:
+Target level: ${targetLevel}${referenceText}
+
+Previously generated / used questions that MUST NOT be repeated or semantically duplicated:
 ${avoidList.map((q, idx) => `${idx + 1}. ${String(q).slice(0, 300)}`).join("\n") || "none"}
 
-Generate exactly ${batchSize} brand new, unique questions now matching the target sub-exam level. Return ONLY valid JSON.`;
+Generate exactly ${batchSize} brand new, unique questions now matching the target sub-exam level. Use the reference PYQ style only as guidance and do not copy or paraphrase them. Return ONLY valid JSON.`;
   return requestAI(system, content);
 }
 

@@ -1,10 +1,14 @@
+import "dotenv/config";
 import fs from "fs";
 import path from "path";
 
-const OCR_PATH = path.resolve("data/pyq/ocr-output.txt");
-const OUTPUT_PATH = path.resolve(
-  "data/pyq/upsc/ssc/so-steno-ldce/2024/so-steno-ldce-2024-pyq.json"
-);
+const ocrInputPath = process.argv[2] || "data/pyq/ocr-output.txt";
+const jsonOutputPath =
+  process.argv[3] ||
+  "data/pyq/upsc/ssc/so-steno-ldce/2024/so-steno-ldce-2024-pyq.json";
+
+const OCR_PATH = path.resolve(ocrInputPath);
+const OUTPUT_PATH = path.resolve(jsonOutputPath);
 
 const apiKey = process.env.GEMINI_API_KEY;
 
@@ -50,7 +54,7 @@ Return exactly this structure:
 {
   "exam": {
     "category": "SSC",
-    "name": "Stenographers / SO-Steno LDCE",
+    "name": "MTS",
     "year": 2024,
     "stage": "",
     "paper": ""
@@ -60,11 +64,11 @@ Return exactly this structure:
     "authority": "SSC",
     "verified": false,
     "sourceUrl": "",
-    "sourceFile": "paper-1.pdf"
+    "sourceFile": "SSC MTS Solved Paper-2024.pdf"
   },
   "questions": [
     {
-      "id": "ssc-so-steno-ldce-2024-q01",
+      "id": "ssc-mts-2024-q01",
       "questionNumber": 1,
       "question": "",
       "options": [
@@ -163,7 +167,39 @@ async function callGemini() {
     .replace(/\s*```$/i, "")
     .trim();
 
+  const rawResponsePath = path.resolve(
+  "data/pyq/ssc/mts/2024/gemini-raw-response.txt"
+);
+
+fs.mkdirSync(path.dirname(rawResponsePath), {
+  recursive: true,
+});
+
+fs.writeFileSync(
+  rawResponsePath,
+  clean,
+  "utf8"
+);
+
+try {
   return JSON.parse(clean);
+} catch (error) {
+  console.error("");
+  console.error("Gemini returned invalid JSON.");
+  console.error(`Raw response saved to: ${rawResponsePath}`);
+  console.error(`JSON error: ${error.message}`);
+  throw error;
+}
+
+try {
+    return JSON.parse(clean);
+  } catch (error) {
+    console.error("");
+    console.error("Gemini returned invalid JSON.");
+    console.error(`Raw response saved to: ${rawResponsePath}`);
+    console.error(`JSON error: ${error.message}`);
+    throw error;
+  }
 }
 
 try {

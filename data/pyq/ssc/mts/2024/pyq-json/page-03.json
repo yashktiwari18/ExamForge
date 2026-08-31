@@ -1,0 +1,450 @@
+{
+  "exam": {
+    "category": "SSC",
+    "name": "MTS",
+    "year": 2024,
+    "stage": "",
+    "paper": ""
+  },
+  "source": {
+    "type": "pyq",
+    "authority": "SSC",
+    "verified": false,
+    "sourceUrl": "",
+    "sourceFile": "SSC MTS Solved Paper-2024.pdf"
+  },
+  "questions": [
+    {
+      "id": "ssc-mts-2024-q01",
+      "questionNumber": 1,
+      "question": "In code language, ‘COLONY’ is coded as 4548 and INTERCHANGE is coded as 58. How will MOUNTAIN be coded in the same language?",
+      "options": [
+        "6",
+        "86",
+        "6",
+        "48"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q02",
+      "questionNumber": 2,
+      "question": "HFLI is related to OMSP in a certain way based on the English alphabetical order. In the same way, KIOL is related to RPV. To which of the following is MKQN related, following the same logic?",
+      "options": [
+        "TRUX",
+        "RTXU",
+        "RTUX",
+        "TRXU"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q03",
+      "questionNumber": 3,
+      "question": "What should come in place of ? in the given series based on the English alphabetical order? ACE, FHI, KMO, PRT, ?",
+      "options": [
+        "NOP",
+        "UWY",
+        "GIK",
+        "BCD"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q04",
+      "questionNumber": 4,
+      "question": "The Pharmacy (Amendment) Bill, 2023 was introduced in Lok Sabha on 3 August 2023, which amends the",
+      "options": [
+        "Pharmacy Act, 1950",
+        "Pharmacy Act, 1949",
+        "Pharmacy Act, 1947",
+        "Pharmacy Act, 1948"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q05",
+      "questionNumber": 5,
+      "question": "In which state/union territory is Losar celebrated to mark the start of the new year in that region?",
+      "options": [
+        "Kerala",
+        "Bihar",
+        "Ladakh",
+        "New Delhi"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q06",
+      "questionNumber": 6,
+      "question": "Kanak Rele, who established Nalanda Dance Research Centre and died in 2023, was an exponent of which of the following classical dance forms of India?",
+      "options": [
+        "Kathakali",
+        "Manipuri",
+        "Mohiniyattam",
+        "Odissi"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q07",
+      "questionNumber": 7,
+      "question": "In which part of India is cool mountain climate found?",
+      "options": [
+        "West",
+        "South",
+        "North",
+        "East"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q08",
+      "questionNumber": 8,
+      "question": "Who was the founder of the Mauryan dynasty?",
+      "options": [
+        "Vikramaditya",
+        "Bindusara",
+        "Chandragupta Maurya",
+        "Ashoka"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q09",
+      "questionNumber": 9,
+      "question": "As of 31st October 2023, the senior-most member (in terms of age) in the 17th Lok Sabha, Shafiqur Rahman Barq represents which political party?",
+      "options": [
+        "Bharatiya Janta Party",
+        "Indian National Congress",
+        "Samajwadi Party",
+        "Rashtriya Janata Dal"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q10",
+      "questionNumber": 10,
+      "question": "Which of the following books is written by Dadabhai Naoroji?",
+      "options": [
+        "Poverty and India",
+        "Important Chapters of Poverty",
+        "Poverty and Un-British Rule in India",
+        "Economic History of India"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q11",
+      "questionNumber": 11,
+      "question": "The historical fiction “The Glory of Patan” by KM Munshi was originally written in which Indian language?",
+      "options": [
+        "Malayalam",
+        "Bengali",
+        "Tamil",
+        "Gujarati"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q12",
+      "questionNumber": 12,
+      "question": "On which date did Punjab abolish the Legislative Council?",
+      "options": [
+        "1 January 1971",
+        "1 January 1977",
+        "1 January 1975",
+        "1 January 1970"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q13",
+      "questionNumber": 13,
+      "question": "The pigment that gives turmeric its yellow colour is:",
+      "options": [
+        "curcumin",
+        "tartaric acid",
+        "carotene",
+        "capsaicin"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q14",
+      "questionNumber": 14,
+      "question": "Who among the following established the Indore gharana?",
+      "options": [
+        "Bhimsen Joshi",
+        "Ustad Amir Khan",
+        "Tansen",
+        "Ustad Ghagge Khuda Baksh"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q15",
+      "questionNumber": 15,
+      "question": "What is the chemical formula for sodium borate?",
+      "options": [
+        "Na2BO4",
+        "Na2CO3",
+        "NaHCO3",
+        "NaOH"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q16",
+      "questionNumber": 16,
+      "question": "Which of the following is one of the features of inferior goods?",
+      "options": [
+        "They are durable.",
+        "They are inexpensive.",
+        "They are Giffen goods.",
+        "They are pricey."
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q17",
+      "questionNumber": 17,
+      "question": "Which is the correct descending order of the Padma Awards?",
+      "options": [
+        "Padma Shri, Padma Vibhushan, Padma Bhushan",
+        "Padma Bhushan, Padma Shri, Padma Vibhushan",
+        "Padma Vibhushan, Padma Bhushan, Padma Shri",
+        "Padma Shri, Padma Bhushan, Padma Vibhushan"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q18",
+      "questionNumber": 18,
+      "question": "Which of the following dynasties established the Vijayanagara kingdom in fourteenth century?",
+      "options": [
+        "Aravidu dynasty",
+        "Saluva dynasty",
+        "Tuluva dynasty",
+        "Sangama dynasty"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q19",
+      "questionNumber": 19,
+      "question": "The red colour of tomatoes is due to the presence of:",
+      "options": [
+        "limonene",
+        "lycopene",
+        "beta carotene",
+        "alizarin"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q20",
+      "questionNumber": 20,
+      "question": "With which sport is Sanjana Bathula associated?",
+      "options": [
+        "Rollerskating",
+        "Squash",
+        "Shooting",
+        "Badminton"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q21",
+      "questionNumber": 21,
+      "question": "Who was the captain of Royal Challengers Bangalore in the Women's Premier League (WPL) 2023 season?",
+      "options": [
+        "Harmanpreet Kaur",
+        "Deepti Sharma",
+        "Shafali Verma",
+        "Smriti Mandhana"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q22",
+      "questionNumber": 22,
+      "question": "Which of the following statements are correct about the famous place Mawsynram? I. It is the wettest place on the earth. II. It is located on the Jaintia Hills.",
+      "options": [
+        "Only I is incorrect",
+        "Only II is correct",
+        "Neither I nor II is correct",
+        "I and II both are correct."
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q23",
+      "questionNumber": 23,
+      "question": "How many countries share land boundaries with India?",
+      "options": [
+        "Nine",
+        "Seven",
+        "Six",
+        "Eight"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    },
+    {
+      "id": "ssc-mts-2024-q24",
+      "questionNumber": 24,
+      "question": "Select the most appropriate synonym of the given word. Ecstatic",
+      "options": [
+        "Shocked",
+        "Happy",
+        "Angry",
+        "Interested"
+      ],
+      "correctIndex": null,
+      "topic": "",
+      "subTopic": "",
+      "difficulty": "",
+      "questionType": "MCQ",
+      "explanation": "",
+      "answerVerified": false
+    }
+  ]
+}
